@@ -1,0 +1,66 @@
+{
+  "checked": "2026-10-18",
+  "items": [
+    {
+      "id": "enso-discussion",
+      "date": "2026-10-08",
+      "source": "NOAA CPC",
+      "title": "Monthly ENSO outlook",
+      "titleAr": "التحديث الشهري لتوقعات ENSO",
+      "summary": "The source bulletin reviews Pacific climate conditions and seasonal probabilities.",
+      "summaryAr": "تستعرض النشرة الأصلية حالة مناخ المحيط الهادئ والاحتمالات الموسمية.",
+      "url": "https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/enso_advisory/ensodisc.shtml",
+      "checked": "2026-10-18"
+    },
+    {
+      "id": "el-nino-2026",
+      "date": "2026-06-11",
+      "source": "NOAA",
+      "title": "NOAA announces El Niño development",
+      "titleAr": "NOAA تعلن تطور النينيو",
+      "summary": "A dated update on the tropical Pacific climate state.",
+      "summaryAr": "تحديث مؤرخ عن الحالة المناخية في المحيط الهادئ الاستوائي.",
+      "url": "https://www.noaa.gov/news-release/el-nino-forms-expected-to-strengthen-say-noaa-forecasters"
+    },
+    {
+      "id": "bleaching-2026",
+      "date": "2026-06-02",
+      "source": "NOAA NESDIS",
+      "title": "Fourth global bleaching event likely ended in 2025",
+      "titleAr": "الحدث العالمي الرابع للابيضاض انتهى على الأرجح في 2025",
+      "summary": "NOAA reviews the extent and timing of the global bleaching event.",
+      "summaryAr": "تراجع NOAA امتداد حدث الابيضاض العالمي وتوقيته.",
+      "url": "https://www.nesdis.noaa.gov/news/worlds-fourth-mass-coral-bleaching-event-likely-ended-2025"
+    },
+    {
+      "id": "wmo-2025",
+      "date": "2026-03-23",
+      "source": "WMO",
+      "title": "State of the Global Climate 2025",
+      "titleAr": "حالة المناخ العالمي في 2025",
+      "summary": "The annual assessment covers temperature, ocean heat and other climate indicators.",
+      "summaryAr": "يشمل التقييم السنوي الحرارة ومحتوى المحيط الحراري ومؤشرات مناخية أخرى.",
+      "url": "https://wmo.int/publication-series/state-of-global-climate/state-of-global-climate-2025"
+    },
+    {
+      "id": "nasa-2024",
+      "date": "2025-01-10",
+      "source": "NASA",
+      "title": "NASA confirms record warmth in 2024",
+      "titleAr": "ناسا تؤكد الاحترار القياسي في 2024",
+      "summary": "A global temperature assessment using land and sea surface observations.",
+      "summaryAr": "تقييم عالمي لدرجة الحرارة باستخدام رصد اليابسة وسطح البحر.",
+      "url": "https://www.nasa.gov/news-release/temperatures-rising-nasa-confirms-2024-warmest-year-on-record/"
+    },
+    {
+      "id": "forecasts-2022",
+      "date": "2022-04-21",
+      "source": "NOAA PSL",
+      "title": "Global seasonal marine heatwave forecasts",
+      "titleAr": "توقعات موسمية عالمية للموجات الحارة البحرية",
+      "summary": "Research on producing heatwave forecasts from existing climate forecast systems.",
+      "summaryAr": "بحث عن إنتاج توقعات الموجات الحارة باستخدام نظم التنبؤ المناخي القائمة.",
+      "url": "https://psl.noaa.gov/news/2022/042122b.html"
+    }
+  ]
+}

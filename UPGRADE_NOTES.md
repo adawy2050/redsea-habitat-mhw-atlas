@@ -32,3 +32,11 @@ A separate dotted timeline displays historical probability backtests and the act
 ## Before phase 4 — organisation, sources and copy
 
 Filters still have stable IDs read by app.js, so secondary controls can be moved into a drawer without changing state. The methods dialog has separate complete EN/AR bodies; they can be reorganised into a table of contents and collapsible sections. Forecast cards already contain probability and backtest outputs; presentation will expose a comparison bar and hide technical detail behind accessible disclosure controls. Papers/news will use separate bilingual, editable catalogues with original source links.
+
+Phase 4 completed: secondary filters and coverage controls moved into an accessible side drawer, preserving IDs and state. All EN/AR methods paragraphs remain in collapsible sections with a desktop contents list. Native keyboard disclosures explain seven scientific terms. Forecast cards retain probability/baseline bars and all validation details behind “How reliable is this?”. Added 20 verified published papers in pages of ten and six dated source-linked NOAA/NASA/WMO bulletins, with independent slideshow controls and full Arabic titles/summaries. The requested name is absent from the curated portal catalogue as well as contacts and reports; no published authorship was rewritten.
+
+Catalogues live in `dist/content/`. Adding bilingual entries updates the interface without rebuilding. The weekly job refreshes the ENSO bulletin date and checks publisher DOI metadata every 90 days; new editorial news selections require a reviewed catalogue entry. Existing article dates and summaries are never invented from a generic feed. Browser checks passed for drawer controls, retained Arabic methods content, two ten-paper pages and EN/AR news.
+
+## Before phase 5 — visual identity
+
+The upgrade is a local CSS layer loaded after the existing styles, with separate small feature modules. The remaining work is tokens and self-hosted fonts, warm atlas typography, theme switching, consistent SVG controls, restrained entrance motion and reduced-motion handling. The canvas remains the measured renderer; metric numbers and legend endpoints remain unchanged.

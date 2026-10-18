@@ -279,9 +279,9 @@
       const track=document.createElement('div');track.className='probability-track';track.innerHTML=`<span style="width:${t.probability*100}%"></span><i style="left:${t.historicalProbability*100}%" title="Historical baseline"></i>`;
       const threshold=document.createElement('p');threshold.className='threshold';threshold.textContent=`High-exposure threshold: >${number(t.highExposureThresholdDays,1)} MHW days / season`;
       const validation=document.createElement('div');validation.className='validation-line';const skill=S.finite(test.skill)?`${signed(test.skill*100,1)}%`:'—';validation.innerHTML=`<span>Backtest: ${test.nTest} seasons</span><span>Brier skill: ${skill}</span>`;
-      const detail=document.createElement('details'),summary=document.createElement('summary');summary.textContent='Validation and model details';const text=document.createElement('p');
+      const detail=document.createElement('details'),summary=document.createElement('summary');summary.textContent='How reliable is this?';const text=document.createElement('p');
       text.textContent=`Brier skill compares earlier-year-only predictions with a historical-probability baseline; zero is equal performance. The ${test.nTest}-season backtest uses years after the SST baseline was available. ${test.nTest<8?'This short validation record does not establish alert reliability. ':''}The full retrospective test has ${retro.nTest} seasons and ${S.finite(retro.skill)?signed(retro.skill*100,1)+'%':'unavailable'} skill. Training: ${t.trainingSeasons} complete ${t.season} seasons (${t.trainingFirstYear}–${t.trainingLastYear}). Predictors: Niño-3.4, NAO, AO, EAWR, North Atlantic SST anomaly and PDO. IOD is omitted from this fixed panel because its current archive is delayed. These probabilities are statistical model estimates, not validated warning levels.`;
-      detail.append(summary,text);e.append(title,region,pair,track,threshold,validation,detail);return e;
+      detail.append(summary,validation,text);e.append(title,region,pair,track,threshold,detail);return e;
     }));
     if(!rows.length)$('outlookCards').innerHTML='<div class="unavailable-outlook">Select at least one habitat to display its seasonal model estimate.</div>';
   }
