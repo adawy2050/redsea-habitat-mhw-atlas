@@ -68,8 +68,8 @@
   function fitStudy(){map.fitBounds(state.basin==='all'?meta.bounds:meta.basins.find(b=>b.id===state.basin).bounds,{padding:[55,45]});}
   function color(v, max) {
     if(!S.finite(v))return '#6b8583';
-    const stops=[[255,245,240],[252,187,161],[252,146,114],[222,45,38],[165,15,21]];
-    const z=Math.max(0,Math.min(.99999,v/max))*4, i=Math.floor(z), t=z-i;
+    const stops=[[0,34,78],[0,46,106],[26,56,111],[50,67,109],[67,78,108],[83,90,109],[97,101,111],[111,112,115],[125,124,120],[140,136,120],[155,148,118],[171,160,114],[188,174,108],[205,187,99],[222,201,88],[240,216,70],[254,232,56]];
+    const z=Math.max(0,Math.min(.99999,v/max))*(stops.length-1), i=Math.floor(z), t=z-i;
     return `rgb(${stops[i].map((c,k)=>Math.round(c+(stops[i+1][k]-c)*t)).join(',')})`;
   }
   function inYears(year) {return year>=state.from&&year<=state.to;}
@@ -285,7 +285,7 @@
     }));
     if(!rows.length)$('outlookCards').innerHTML='<div class="unavailable-outlook">Select at least one habitat to display its seasonal model estimate.</div>';
   }
-  function stop(){clearInterval(state.timer);state.timer=null;$('play').textContent='▶';$('play').setAttribute('aria-label','Play annual maps');}
+  function stop(){clearInterval(state.timer);state.timer=null;$('play').textContent='';$('play').setAttribute('aria-label','Play annual maps');}
   function forecastAvailability(){const enabled=!!outlook.pixelOutlooks[state.product];document.querySelector('#metric option[value="outlook_probability"]').disabled=!enabled;if(!enabled&&state.mapMode==='probability'){state.mapMode='history';$('metric').value=state.metric;}}
   async function createPointReport(){
     const button=$('createReport'),pixel=state.pixel,product=state.product,metric=state.metric,point=pixels[pixel],productInfo=meta.products[product];
@@ -306,7 +306,7 @@
         association,scenarios:window.AtlasScenarios?.compute(),detail:await window.AtlasDetails?.load(pixel,product),dailyClimate:await window.AtlasDetails?.climate(),updated:outlook.asOf,liveClimate,webUrl:`https://adawy2050.github.io/redsea-habitat-mhw-atlas/?lat=${point[1]}&lon=${point[0]}&product=${product}`});
       note('Point report downloaded.');
     }catch(error){console.error(error);note(`Report could not be created: ${error.message}`);}
-    finally{button.disabled=false;button.textContent='Create point report (PDF) ↓';}
+    finally{button.disabled=false;button.textContent='Create point report (PDF) ';}
   }
   function exportMap(){
     const canvas=document.createElement('canvas'),w=$('map').clientWidth,h=$('map').clientHeight;
@@ -337,7 +337,7 @@
     $('showTrend').onchange=()=>{state.showTrend=$('showTrend').checked;renderHistory();};$('climateTrend').onchange=()=>{state.climateTrend=$('climateTrend').checked;renderClimate();};
     document.querySelectorAll('input[name="habitat"]').forEach(el=>el.onchange=()=>{state.habitats=[...document.querySelectorAll('input[name="habitat"]:checked')].reduce((s,e)=>s+Number(e.value),0);filterChanged();});
     $('year').oninput=yearChanged;
-    $('play').onclick=()=>{if(state.timer){stop();return;}$('play').textContent='Ⅱ';$('play').setAttribute('aria-label','Pause annual maps');const p=meta.products[state.product];if(state.year===p.years.at(-1)){$('year').value=p.years[0];yearChanged();}state.timer=setInterval(()=>{if(state.year>=p.years.at(-1)){stop();return;}$('year').value=state.year+1;yearChanged();},750);};
+    $('play').onclick=()=>{if(state.timer){stop();return;}$('play').textContent='';$('play').setAttribute('aria-label','Pause annual maps');const p=meta.products[state.product];if(state.year===p.years.at(-1)){$('year').value=p.years[0];yearChanged();}state.timer=setInterval(()=>{if(state.year>=p.years.at(-1)){stop();return;}$('year').value=state.year+1;yearChanged();},750);};
     $('fitMap').onclick=fitStudy;
     $('pinPixel').onclick=()=>{if(state.pins.includes(state.pixel)){note('This cell is already in the comparison.');return;}if(state.pins.length>=5){note('Compare up to five pinned cells. Remove one to add another.');return;}state.pins.push(state.pixel);renderHistory();note('Cell added. Select another cell on the map to compare.');};
     $('clearPins').onclick=()=>{state.pins=[];renderHistory();};

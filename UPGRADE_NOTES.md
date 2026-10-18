@@ -40,3 +40,11 @@ Catalogues live in `dist/content/`. Adding bilingual entries updates the interfa
 ## Before phase 5 — visual identity
 
 The upgrade is a local CSS layer loaded after the existing styles, with separate small feature modules. The remaining work is tokens and self-hosted fonts, warm atlas typography, theme switching, consistent SVG controls, restrained entrance motion and reduced-motion handling. The canvas remains the measured renderer; metric numbers and legend endpoints remain unchanged.
+
+Phase 5 completed: warm paper/sand, rust and deep-sea tokens; self-hosted OFL Inter, Source Serif 4 and Noto Sans Arabic WOFF2 subsets; a persistent light/dark switch; flat rules and varied chart/reading layouts; matched inline SVG controls. Replaced the map colour ramp with a 17-stop Cividis sample (same metric scales/endpoints), a perceptually ordered blue-to-gold palette that does not depend on red/green discrimination. The map legend uses the identical stops, and map overlays retain a solid high-contrast surround.
+
+Added a photographed bleaching comparison with true Great Barrier Reef location, full source and licence. Hero crossfade/parallax and chart entrance motion have a visible pause control; system reduced-motion disables both and reveals charts immediately. Slideshow timers pause when hidden or when motion is disabled. Desktop EN, dark-chart and 360 px Arabic screenshots were inspected; no page errors or horizontal overflow were observed.
+
+## Before phase 6 — release checks
+
+The production site is still build-free and project-relative; no API keys or runtime image hotlinks were added. Verification will cover immutable study hashes, dense-series reconstruction, existing model tests, both languages/themes at 360/768/1440 px, reduced motion, source pagination, viewer, map/CSV/plot exports and rich PDF pages. Lighthouse results will be reported as measured. A separate asset manifest will cover display additions while preserving the original scientific manifest and data hashes.
