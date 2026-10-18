@@ -24,9 +24,20 @@ def main():
     parser.add_argument('--owner', default='adawy2050')
     parser.add_argument('--repo', default='redsea-habitat-mhw-atlas')
     parser.add_argument('--check-only', action='store_true')
+    parser.add_argument('--git-auth', action='store_true', help='Use the existing GitHub sign-in through the normal Git credential helper; no credential is printed or saved')
     args = parser.parse_args()
-    print('Ready for GitHub token on stdin (not echoed or stored).', flush=True)
-    token = getpass.getpass('GitHub token (hidden): ').strip()
+    if args.git_auth:
+        credential_env = os.environ.copy()
+        credential_env.update({'GIT_TERMINAL_PROMPT':'0','GCM_INTERACTIVE':'Never'})
+        credentials = subprocess.run(['git','-c','credential.interactive=never','credential','fill'],
+            input=f'protocol=https\nhost=github.com\nusername={args.owner}\n\n',
+            cwd=ROOT, env=credential_env, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        fields = dict(line.split('=',1) for line in credentials.stdout.splitlines() if '=' in line)
+        token = fields.get('password','') if credentials.returncode == 0 else ''
+        print('Using the existing GitHub sign-in through Git credential helper.', flush=True)
+    else:
+        print('Ready for GitHub token on stdin (not echoed or stored).', flush=True)
+        token = getpass.getpass('GitHub token (hidden): ').strip()
     if not token:
         raise SystemExit('No credential supplied.')
     def api(method, path, body=None, optional=False):
