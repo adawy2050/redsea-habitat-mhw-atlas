@@ -28,6 +28,8 @@ Calendar-year means are computed from the cached monthly series. The archive con
 
 Climate charts standardise each selected series over the displayed period when requested. Original-scale CSV downloads preserve the underlying archive values. Raw multi-index overlays combine different units, which is stated beside the chart.
 
+The climate plot has its own start and end years, independent of the MHW analysis period, and can include the latest available months of the current year. The current-year shortcut uses monthly resolution. Annual live-feed means include available months only; incomplete-year means are labelled as year-to-date, and CSV exports provide a month-count column for every selected index. Latest-month cards show each index's own value and date. Missing and delayed observations remain blank.
+
 ## Pixel model and variation shares
 
 The full annual model has an intercept, a reference term (year or annual mean OISST SST) and the seven annual climate indices. It uses ordinary least squares on complete observations in the selected period, with numerical centring/scaling. At least 12 complete years are required by the interface for this eight-predictor fit. Modified Gram–Schmidt QR with reorthogonalisation gives the projection and coefficients, dropping numerically dependent columns.
@@ -71,6 +73,12 @@ The map-variable dropdown includes upcoming-season prediction probability. The s
 Esri World Imagery is loaded only for the visitor's current map viewport. Required imagery credits appear on the map and exported map image. It is a reference mosaic with varying acquisition dates, not an annual satellite image for the chosen heatwave year. The Natural Earth coastline option remains available independently.
 
 Transparent raster coverage maps show the study's UNEP-WCMC coral (2021), seagrass (2021) and mangrove (2010) inventories. They are rendered from the local study GeoPackage into Web Mercator map tiles at zooms 4–12, with no GIS geometries or source attributes exported. Original polygon inventories should be obtained from the providers. These coverage maps are context layers; analysis still uses only the 49,408 retained habitat grid cells and their corrected SST attachments. See the [UNEP-WCMC general data licence](https://www.unep-wcmc.org/en/general-data-license).
+
+The separate habitat gallery contains openly licensed Red Sea photographs from Wikimedia Commons, with original JPEGs, locations, authors and licence links retained in `images/credits.json` and visible captions. The pictures show a Red Sea reef in Egypt, a seagrass meadow at Marsa Abu Dabbab, and mangroves at Nabq. CSS crops the displayed cards; original-resolution links return the unmodified photographs. These are habitat examples and do not establish habitat condition or coverage at a selected analysis cell.
+
+## Interface languages
+
+The top switch changes between English and Arabic, preserving the selected pixel, model, probabilities and controls. Arabic uses right-to-left page layout and translated interface, chart labels and methods; geographic maps, numerical chart axes and source identifiers retain their original coordinate direction. The choice is stored locally and in the share URL's `lang` parameter. Scientific arrays, source data, CSV schemas and model coefficients are unchanged. Point PDF reports remain in English and the Arabic download button says so.
 
 ## Packaging
 

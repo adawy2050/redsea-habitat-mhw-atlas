@@ -20,6 +20,9 @@ A static, interactive atlas of **49,408 habitat grid cells** across the Red Sea 
 - Choose prediction probability in the map-variable dropdown to map individual source-cell forecasts.
 - Create a point PDF with all six annual histories, the seasonal outlook, validation, climate associations and author contacts.
 - View newly released NOAA monthly indices while preserving the manuscript's historical climate archive.
+- Switch between English and Arabic at the top; Arabic uses a right-to-left layout, translated controls, chart labels and methods. The choice persists and can be shared with `?lang=ar` or `?lang=en`.
+- Set the climate chart's own date range, jump to the current year, or view annual means including clearly labelled partial years. Latest-month cards retain each index's actual publication date.
+- Open the Red Sea habitat photographs at their original resolution, with photographer and open-licence credits beside each image.
 
 GHRSST MUR is the first view (2003–2025, 0.01°, baseline 2003–2022). OISST provides the longer record (1982–2025, 0.25°, baseline 1982–2011). The map locations remain habitat grid cells; selecting OISST does not increase its native SST resolution.
 
@@ -39,6 +42,8 @@ The included `.github/workflows/pages.yml` publishes `dist/` after pushes to `ma
 The same workflow refreshes NOAA climate observations and seasonal models at habitat, ecoregion and individual source-cell scales each Monday at 00:20 UTC (09:20 JST), and on manual dispatch. It commits the updated feed, forecast arrays, outlook and checksum files before deploying. Failed downloads leave the previous successful published version intact. MHW pixel observations remain the study record through 2025; they are not automatically extended by this climate-only job.
 
 The current IOD archive is delayed. A fixed six-index panel (Niño-3.4, NAO, AO, EAWR, North Atlantic SST anomaly and PDO) supplies the dated seasonal outlook, with its own nested chronological backtest. The seventh index remains available in the historical analysis and latest-feed charts. Model probabilities are shown with a historical baseline and Brier skill, rather than validated alert categories.
+
+The climate panel also shows the selected point's next-season forecast with its dates, historical probability and backtest. Its climate date range is independent of the MHW analysis years. Current-year monthly data stop at the latest available observations; annual means for incomplete years use available months only, with month counts included in CSV exports. The downloadable point PDFs remain in English, as labelled in the Arabic interface.
 
 ## Data and statistics
 
@@ -69,3 +74,5 @@ The builder requires the original corrected attachment table, event catalogue, O
 ## Sources and attribution
 
 Ahmed Eladawy and Mohammed Shaltout. Contacts: ahmed.eladawy@jamstec.go.jp and mohamed.shaltot@alexu.edu.eg. SST: NASA/JPL GHRSST MUR v4.1 and NOAA OISST v2.1. Habitat inventories: UNEP-WCMC Ocean+ Habitats (coral 2021, seagrass 2021, mangroves 2010). Climate: NOAA CPC, PSL and NCEI ERSSTv5. Satellite imagery: Esri, Vantor, Earthstar Geographics and the GIS User Community. Coastline: Natural Earth public-domain land vectors. Leaflet 1.9.4, Plotly.js 2.35.2, jsPDF 4.2.1 and jsPDF-AutoTable 5.0.8 are vendored with their original license notices. Original data providers' use and attribution terms continue to apply. This repository contains sampled numerical habitat-cell values and rendered coverage maps, not the original habitat polygon datasets or cached satellite imagery.
+
+Habitat photographs retain their original JPEGs: Menna.Hassan100 (Red Sea coral reef, CC BY-SA 4.0), Mark Goodchild / Ruth Hartnup (Marsa Abu Dabbab seagrass and dugong, CC BY 2.0), and Hatem Moushir (Nabq mangroves, CC BY-SA 3.0), via Wikimedia Commons. See [`dist/images/credits.json`](dist/images/credits.json) for original sources and licence links. Photos are unedited; CSS crops only their on-page display. Their licences apply independently of the portal code. They are habitat illustrations, not observations of the currently selected pixel.

@@ -14,7 +14,7 @@
   };
   const state = {product:'mur', metric:'mhw_days',mapMode:'history', year:2025, region:'all', habitats:7, pixel:0, pins:[], arrays:new Map(),
     from:2003, to:2025, lag:0, benchmark:'trend', index:'Nino34', detrend:true, selectedModes:new Set(['Nino34','IOD','NAtl_SSTA']),
-    step:'monthly', scale:'standard', climateSource:'latest',outlookRecord:'GHRSST MUR',outlookScope:'ecoregion',pixelOpacity:.7,showPixels:true,timer:null,generation:0};
+    step:'monthly', scale:'standard', climateSource:'latest',climateFrom:null,climateTo:null,outlookRecord:'GHRSST MUR',outlookScope:'ecoregion',pixelOpacity:.7,showPixels:true,timer:null,generation:0};
   let meta, pixels, climate, map, pixelLayer, selectedMarker, sourceMarker, sourceLine, climateZ, mapLand,landLayer,satelliteLayer,coverageMeta,liveClimate,outlook;
   const coverageLayers={};
   let modelData = null, currentHistory = [], climateExport = [];
@@ -27,6 +27,10 @@
     yaxis:{gridcolor:'#edf0e7',zeroline:false,title:{font:{size:10}},fixedrange:false},
     legend:{orientation:'h',x:0,y:1.15,font:{size:10}}, showlegend:true};
   function layout(extra={}) { return {...baseLayout,...extra,xaxis:{...baseLayout.xaxis,...extra.xaxis},yaxis:{...baseLayout.yaxis,...extra.yaxis}}; }
+  function renderPlot(id,traces,chartLayout,options=config){
+    const localize=(value,key)=>{if(typeof value==='string')return ['name','text','title'].includes(key)&&window.AtlasLanguage?.current==='ar'?window.AtlasLanguage.translate(value):value;if(Array.isArray(value))return value.map(v=>localize(v,key));if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).map(([k,v])=>[k,localize(v,k)]));return value;};
+    return Plotly.react(id,localize(traces,''),localize(chartLayout,''),options);
+  }
   function note(message) { $('toast').textContent=message; $('toast').hidden=false; clearTimeout(note.timer); note.timer=setTimeout(()=>{$('toast').hidden=true;},4000); }
   function loading(message) { $('loadingText').textContent=message; $('loading').hidden=false; }
   async function json(path) { const r=await fetch(path); if(!r.ok)throw Error(`${path}: HTTP ${r.status}`); return r.json(); }
@@ -65,7 +69,7 @@
     return `rgb(${stops[i].map((c,k)=>Math.round(c+(stops[i+1][k]-c)*t)).join(',')})`;
   }
   function inYears(year) {return year>=state.from&&year<=state.to;}
-  function monthLabel(value){return new Date(`${value}-01T00:00:00Z`).toLocaleDateString('en-GB',{month:'short',year:'numeric',timeZone:'UTC'});}
+  function monthLabel(value){return new Date(`${value.slice(0,7)}-01T00:00:00Z`).toLocaleDateString('en-GB',{month:'short',year:'numeric',timeZone:'UTC'});}
   function download(name, content, mime='text/csv;charset=utf-8') {
     const url=URL.createObjectURL(new Blob([content],{type:mime})), a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);
   }
@@ -171,7 +175,7 @@
       years.forEach((year,k)=>currentHistory.push({pixel:pixelId(index),latitude:pixels[index][1],longitude:pixels[index][0],product:p.name,year,metric,value:v[k]}));
       return {x:years,y:v,type:'scatter',mode:'lines+markers',name:coordinate(index),line:{color:j===0?'#1768ac':pinColors[(j-1)%pinColors.length],width:j===0?2.5:1.6},marker:{size:4},connectgaps:false,hovertemplate:`%{y:.2f} ${metricInfo[metric].unit}<extra>${coordinate(index)}</extra>`};
     });
-    Plotly.react('historyPlot',traces,layout({yaxis:{title:metricInfo[metric].axis},xaxis:{dtick:Math.max(1,Math.round((state.to-state.from)/9))},shapes:[{type:'line',xref:'x',x0:state.year,x1:state.year,yref:'paper',y0:0,y1:1,line:{color:'#a6b3a0',width:1,dash:'dot'}}]}),config);
+    renderPlot('historyPlot',traces,layout({yaxis:{title:metricInfo[metric].axis},xaxis:{dtick:Math.max(1,Math.round((state.to-state.from)/9))},shapes:[{type:'line',xref:'x',x0:state.year,x1:state.year,yref:'paper',y0:0,y1:1,line:{color:'#a6b3a0',width:1,dash:'dot'}}]}),config);
     $('historyCaption').textContent=`${p.name} · ${state.from}–${state.to} · baseline ${p.baseline} · ${metricInfo[metric].unit}`;
     $('pins').replaceChildren(...state.pins.map((index,j)=>{const e=document.createElement('span');e.className='pin';const dot=document.createElement('i');dot.className='pin-dot';dot.style.background=pinColors[j%pinColors.length];const b=document.createElement('button');b.textContent='×';b.setAttribute('aria-label',`Remove ${coordinate(index)}`);b.onclick=()=>{state.pins=state.pins.filter(i=>i!==index);renderHistory();};e.append(dot,document.createTextNode(coordinate(index)),b);return e;}));
   }
@@ -184,13 +188,13 @@
       return {year, observed:values[i], reference:state.benchmark==='trend'?year:sstSeries[sstIndex],
         indices:climate.modes.map(m=>climateIndex>=0?annual.values[m][climateIndex]:null),sst:sstSeries[sstIndex]};
     }).filter(r=>inYears(r.year)&&[r.observed,r.reference,...r.indices].every(S.finite));
-    if(rows.length<12){modelData=null;$('modelSample').textContent=`${rows.length} complete years · choose ≥12`;for(const id of ['modelR2','modelCv'])$(id).textContent='—';$('varianceBar').replaceChildren();$('shares').textContent='Select a longer period for the eight-predictor model.';Plotly.react('modelPlot',[],layout({annotations:[{text:'Choose at least 12 complete years.',xref:'paper',yref:'paper',x:.5,y:.5,showarrow:false}]}),config);renderPaired(years,values,sstSeries);return;}
+    if(rows.length<12){modelData=null;$('modelSample').textContent=`${rows.length} complete years · choose ≥12`;for(const id of ['modelR2','modelCv'])$(id).textContent='—';$('varianceBar').replaceChildren();$('shares').textContent='Select a longer period for the eight-predictor model.';renderPlot('modelPlot',[],layout({annotations:[{text:'Choose at least 12 complete years.',xref:'paper',yref:'paper',x:.5,y:.5,showarrow:false}]}),config);renderPaired(years,values,sstSeries);return;}
     const ys=rows.map(r=>r.year),y=rows.map(r=>r.observed),columns=[rows.map(r=>r.reference),...climate.modes.map((_,j)=>rows.map(r=>r.indices[j]))];
     const model=S.shapley(y,columns),base=S.fit(y,[columns[0]]),reference=state.benchmark==='trend'?'Long-term trend':'Annual SST (OISST)';
     modelData={rows,model,base,names:[reference,...climate.modes.map(m=>labels[m])],product,metric,pixel};
     $('modelSample').textContent=`${rows.length} complete years · ${ys[0]}–${ys.at(-1)}`;
     $('modelR2').textContent=number(model.r2,2);$('modelCv').textContent=number(model.cvR2,2);
-    Plotly.react('modelPlot',[
+    renderPlot('modelPlot',[
       {x:ys,y,type:'scatter',mode:'lines+markers',name:'Observed',line:{color:'#1768ac',width:2},marker:{size:4}},
       {x:ys,y:base.pred,type:'scatter',mode:'lines',name:reference,line:{color:'#8e9e8c',width:1.5,dash:'dot'}},
       {x:ys,y:model.pred,type:'scatter',mode:'lines',name:'Combined model',line:{color:'#253444',width:1.8}}
@@ -208,23 +212,40 @@
     const y=state.detrend?S.detrend(rawY,ys):rawY,x=state.detrend?S.detrend(rawX,ys):rawX,r=S.correlation(y,x),d=state.detrend?'Detrended':'Raw';
     $('pairedTitle').textContent=`${labels[state.index]} & ${metricInfo[state.metric].name.toLowerCase()}`;
     $('pairedStat').textContent=`${d} r = ${number(r,2)} · n = ${keep.length}`;
-    Plotly.react('pairedPlot',[
+    renderPlot('pairedPlot',[
       {x:ys,y:S.standardize(y),type:'scatter',mode:'lines+markers',name:`Heatwave metric${state.detrend?' (detrended)':''}`,line:{color:'#253444',width:2},marker:{size:3}},
       {x:ys,y:S.standardize(x),type:'scatter',mode:'lines',name:labels[state.index],line:{color:modeColors[state.index],width:1.8}}
     ],layout({margin:{l:52,r:15,t:35,b:38},yaxis:{title:'Standard deviations'},legend:{...baseLayout.legend,y:1.19},xaxis:{dtick:Math.max(1,Math.round((state.to-state.from)/9))}}),config);
     $('pairedCaption').textContent=local?`${d} annual series · same-year OISST mean SST at the attached habitat source cell · standardised over the same complete years.`:`${d} annual series · index lead ${state.lag} year${state.lag===1?'':'s'} · both series standardised over the same complete years.`;
   }
-  function renderClimate() {
-    const latest=state.climateSource==='latest',monthly=latest||state.step==='monthly',data=latest?liveClimate.monthly:climate[state.step],x0=monthly?data.dates:data.years,keep=x0.map((x,i)=>({x,i,year:monthly?Number(x.slice(0,4)):x})).filter(d=>d.year>=state.from&&(latest||d.year<=state.to));
-    const modes=climate.modes.filter(m=>state.selectedModes.has(m));climateExport=[];
-    keep.forEach(d=>{const row={date:d.x};modes.forEach(m=>{row[m]=data.values[m][d.i];});climateExport.push(row);});
-    const traces=modes.map(m=>{const raw=keep.map(d=>data.values[m][d.i]),y=state.scale==='standard'?S.standardize(raw):raw;return {x:keep.map(d=>d.x),y,type:'scatter',mode:'lines',name:labels[m],line:{color:modeColors[m],width:monthly?1.3:2},connectgaps:false};});
-    Plotly.react('climatePlot',traces,layout({xaxis:{type:monthly?'date':'linear',tickformat:monthly?'%Y':'d',dtick:monthly?undefined:Math.max(1,Math.round((state.to-state.from)/9))},yaxis:{title:state.scale==='standard'?'Standard deviations':'Original index values'},annotations:traces.length?[]:[{text:'Select one or more indices above.',xref:'paper',yref:'paper',x:.5,y:.5,showarrow:false}]}),config);
-    $('climateCaption').textContent=latest?`NOAA feeds checked ${liveClimate.asOf} · latest: ${monthLabel(Object.values(liveClimate.latestByMode).sort().at(-1))}; IOD: ${monthLabel(liveClimate.latestByMode.IOD)} · missing months remain blank.`:state.scale==='standard'?`${monthly?'Monthly':'Annual'} indices · standardised within ${state.from}–${state.to} · downloads retain original values.`:'Original values; index units differ. Use standardised scale for direct comparison.';
+  function climateDateControls(){
+    const dates=(state.climateSource==='latest'?liveClimate.monthly:climate.monthly).dates,first=Number(dates[0].slice(0,4)),last=Number(dates.at(-1).slice(0,4));
+    state.climateFrom=Math.max(first,Math.min(state.climateFrom??last-10,last));state.climateTo=Math.max(state.climateFrom,Math.min(state.climateTo??last,last));
+    for(const id of ['climateFrom','climateTo']){$(id).replaceChildren(...Array.from({length:last-first+1},(_,i)=>new Option(first+i,first+i)));$(id).value=state[id];}
+    $('climateThisYear').disabled=state.climateSource!=='latest';
   }
-  async function renderPointOutlook(){const pixel=state.pixel,product=state.product,f=await pointForecast(product,pixel);if(pixel!==state.pixel||product!==state.product)return;if(!f){$('pointOutlookTitle').textContent='Waiting for recent climate data';for(const id of ['pointProbability','pointBaseline','pointSkill'])$(id).textContent='—';return;}
+  function renderLatestIndices(){
+    $('latestIndexCards').replaceChildren(...climate.modes.map(mode=>{const dates=liveClimate.monthly.dates,values=liveClimate.monthly.values[mode];let i=values.length-1;while(i>=0&&!S.finite(values[i]))i--;const card=document.createElement('article');card.className='latest-index-card';
+      const name=document.createElement('h3');name.textContent=labels[mode];const value=document.createElement('strong');value.textContent=i<0?'—':`${signed(values[i],2)}${['Nino34','IOD','NAtl_SSTA'].includes(mode)?' °C':''}`;const date=document.createElement('span');date.textContent=i<0?'Unavailable':monthLabel(dates[i]);
+      card.append(name,value,date);return card;}));
+  }
+  function renderClimate() {
+    const latest=state.climateSource==='latest',monthly=state.step==='monthly';let data=latest?liveClimate.monthly:climate[state.step];
+    if(latest&&!monthly){const years=[...new Set(data.dates.map(d=>Number(d.slice(0,4))))],values={};for(const mode of climate.modes)values[mode]=years.map(year=>{const v=data.values[mode].filter((v,i)=>Number(data.dates[i].slice(0,4))===year&&S.finite(v));return v.length?S.mean(v):null;});data={years,values};}
+    const x0=monthly?data.dates:data.years,keep=x0.map((x,i)=>({x,i,year:monthly?Number(x.slice(0,4)):x})).filter(d=>d.year>=state.climateFrom&&d.year<=state.climateTo);
+    const modes=climate.modes.filter(m=>state.selectedModes.has(m));climateExport=[];
+    keep.forEach(d=>{const row={date:d.x};modes.forEach(m=>{row[m]=data.values[m][d.i];if(latest&&!monthly)row[`${m}_months`]=liveClimate.monthly.values[m].filter((v,i)=>Number(liveClimate.monthly.dates[i].slice(0,4))===d.year&&S.finite(v)).length;});climateExport.push(row);});
+    const traces=modes.map(m=>{const raw=keep.map(d=>data.values[m][d.i]),y=state.scale==='standard'?S.standardize(raw):raw;return {x:keep.map(d=>d.x),y,type:'scatter',mode:'lines',name:labels[m],line:{color:modeColors[m],width:monthly?1.3:2},connectgaps:false};});
+    const tickformat=monthly?(state.climateFrom===state.climateTo?'%b %Y':'%Y'):'d';
+    renderPlot('climatePlot',traces,layout({xaxis:{type:monthly?'date':'linear',tickformat,dtick:monthly?undefined:Math.max(1,Math.round((state.climateTo-state.climateFrom)/9))},yaxis:{title:state.scale==='standard'?'Standard deviations':'Original index values'},annotations:traces.length?[]:[{text:'Select one or more indices above.',xref:'paper',yref:'paper',x:.5,y:.5,showarrow:false}]}),config);
+    $('climateRangeNote').textContent=`${state.climateFrom}–${state.climateTo} · climate dates are independent of heatwave analysis years`;
+    $('climateCaption').textContent=latest?`NOAA feeds checked ${liveClimate.asOf} · latest: ${monthLabel(Object.values(liveClimate.latestByMode).sort().at(-1))}; IOD: ${monthLabel(liveClimate.latestByMode.IOD)} · missing months remain blank.${monthly?'':' Annual values for incomplete years are means of available months (year to date).'}`:state.scale==='standard'?`${monthly?'Monthly':'Annual'} indices · standardised within ${state.climateFrom}–${state.climateTo} · downloads retain original values.`:'Original values; index units differ. Use standardised scale for direct comparison.';
+  }
+  async function renderPointOutlook(){const pixel=state.pixel,product=state.product,f=await pointForecast(product,pixel);if(pixel!==state.pixel||product!==state.product)return;if(!f){$('pointOutlookTitle').textContent='Waiting for recent climate data';$('climateNextTitle').textContent='Waiting for recent climate data';$('climateNextDetail').textContent='';for(const id of ['pointProbability','pointBaseline','pointSkill'])$(id).textContent='—';return;}
     $('pointOutlookTitle').textContent=`${coordinate(pixel)} · ${meta.products[product].name}`;$('pointOutlookPeriod').textContent=`${monthLabel(f.seasonStart.slice(0,7))}–${monthLabel(f.seasonEnd.slice(0,7))} · ${f.leadMonths}-month lead · individual SST-source-cell model`;
     $('pointProbability').textContent=percent(f.probability);$('pointBaseline').textContent=percent(f.baseline);$('pointSkill').textContent=`${signed(f.skill*100,1)}%`;$('pointValidationYears').textContent=`Brier skill · ${f.nTest} test seasons`;
+    $('climateNextTitle').textContent=`${monthLabel(f.seasonStart.slice(0,7))}–${monthLabel(f.seasonEnd.slice(0,7))} · ${percent(f.probability)} high-exposure probability`;
+    $('climateNextDetail').textContent=`${coordinate(pixel)} · ${meta.products[product].name} · historical baseline ${percent(f.baseline)} · Brier skill ${signed(f.skill*100,1)}% (${f.nTest} test seasons) · ${f.leadMonths}-month lead`;
     if(state.mapMode==='probability'){$('recordMean').textContent=percent(f.baseline);$('pixelTrend').textContent=`${signed(f.skill*100,1)}%`;$('peakYear').textContent=f.nTest;}
   }
   async function renderOutlook(){
@@ -294,6 +315,7 @@
   }
   function yearChanged(){state.year=Number($('year').value);pixelLayer.draw();updateMapText();Plotly.relayout('historyPlot',{'shapes[0].x0':state.year,'shapes[0].x1':state.year}).catch(()=>{});}
   function bind() {
+    window.addEventListener('atlaslanguagechange',()=>{renderHistory();renderModel();renderClimate();});
     $('product').onchange=()=>{stop();state.product=$('product').value;forecastAvailability();setYearControls();renderMap();renderClimate();};
     $('metric').onchange=()=>{stop();if($('metric').value==='outlook_probability')state.mapMode='probability';else{state.mapMode='history';state.metric=$('metric').value;}renderMap();};
     $('basemap').onchange=()=>{if($('basemap').value==='satellite'){map.removeLayer(landLayer);satelliteLayer.addTo(map);}else{map.removeLayer(satelliteLayer);landLayer.addTo(map);}};
@@ -311,7 +333,11 @@
     $('benchmark').onchange=()=>{state.benchmark=$('benchmark').value;renderModel();};$('lag').onchange=()=>{state.lag=Number($('lag').value);renderModel();};
     $('pairedIndex').onchange=()=>{state.index=$('pairedIndex').value;renderModel();};$('detrend').onchange=()=>{state.detrend=$('detrend').checked;renderModel();};
     $('climateStep').onchange=()=>{state.step=$('climateStep').value;renderClimate();};$('climateScale').onchange=()=>{state.scale=$('climateScale').value;renderClimate();};
-    $('climateSource').onchange=()=>{state.climateSource=$('climateSource').value;$('climateStep').disabled=state.climateSource==='latest';if(state.climateSource==='latest'){state.step='monthly';$('climateStep').value='monthly';}renderClimate();};
+    $('climateSource').onchange=()=>{state.climateSource=$('climateSource').value;state.climateTo=null;climateDateControls();renderClimate();};
+    $('climateFrom').onchange=()=>{state.climateFrom=Number($('climateFrom').value);if(state.climateFrom>state.climateTo){state.climateTo=state.climateFrom;$('climateTo').value=state.climateTo;}renderClimate();};
+    $('climateTo').onchange=()=>{state.climateTo=Number($('climateTo').value);if(state.climateTo<state.climateFrom){state.climateFrom=state.climateTo;$('climateFrom').value=state.climateFrom;}renderClimate();};
+    $('climateThisYear').onclick=()=>{state.climateFrom=state.climateTo=Number(liveClimate.asOf.slice(0,4));state.step='monthly';$('climateStep').value='monthly';climateDateControls();renderClimate();};
+    $('climateFullRecord').onclick=()=>{const dates=(state.climateSource==='latest'?liveClimate.monthly:climate.monthly).dates;state.climateFrom=Number(dates[0].slice(0,4));state.climateTo=Number(dates.at(-1).slice(0,4));climateDateControls();renderClimate();};
     $('outlookRecord').onchange=()=>{state.outlookRecord=$('outlookRecord').value;renderOutlook();};
     $('outlookScope').onchange=()=>{state.outlookScope=$('outlookScope').value;renderOutlook();};
     $('showPointOutlook').onclick=()=>{state.outlookScope='pixel';state.outlookRecord=meta.products[state.product].name;$('outlookScope').value='pixel';$('outlookRecord').value=state.outlookRecord;renderOutlook();$('outlook').scrollIntoView({behavior:'smooth'});};
@@ -323,7 +349,7 @@
     $('methodsClose').onclick=()=>$('methodsDialog').close();$('methodsDialog').onclick=e=>{if(e.target===$('methodsDialog'))$('methodsDialog').close();};
     $('locateForm').onsubmit=e=>{e.preventDefault();const parts=$('locate').value.trim().split(/[,\s]+/).map(Number);if(parts.length!==2||!parts.every(Number.isFinite)||parts[0]<-90||parts[0]>90||parts[1]<-180||parts[1]>180){$('locateMessage').textContent='Enter latitude, longitude; for example 21.5, 39.1';return;}const i=nearest(parts[0],parts[1],true);if(i<0){$('locateMessage').textContent='Select at least one habitat first.';return;}const d=Math.hypot(pixels[i][1]-parts[0],(pixels[i][0]-parts[1])*Math.cos(parts[0]*Math.PI/180))*111;$('locateMessage').textContent=`Nearest retained habitat cell: about ${number(d,1)} km away`;selectPixel(i,true);};
     $('downloadHistory').onclick=()=>download(`habitat_history_${state.product}_${state.metric}.csv`,csv(currentHistory));
-    $('downloadClimate').onclick=()=>download(`climate_indices_${state.step}_${state.from}_${state.climateSource==='latest'?liveClimate.monthly.dates.at(-1).slice(0,7):state.to}.csv`,csv(climateExport));
+    $('downloadClimate').onclick=()=>download(`climate_indices_${state.step}_${state.climateFrom}_${state.climateTo}.csv`,csv(climateExport));
     $('downloadPixel').onclick=async()=>{const pixel=state.pixel,product=state.product,p=meta.products[product],arrays=await Promise.all(meta.metrics.map(m=>array(product,m))),sst=await array('oisst','sst'),ss=series(pixel,sst,'oisst');
       const rows=p.years.map((year,j)=>{const row={pixel:pixelId(pixel),latitude:pixels[pixel][1],longitude:pixels[pixel][0],product:p.name,baseline:p.baseline,year,source_latitude:p.cells[sourceIndex(pixel,product)][1],source_longitude:p.cells[sourceIndex(pixel,product)][0]};meta.metrics.forEach((m,k)=>{row[m]=series(pixel,arrays[k],product)[j];});row.oisst_annual_mean_sst=ss[meta.products.oisst.years.indexOf(year)];climate.modes.forEach(m=>{row[m]=climate.annual.values[m][climate.annual.years.indexOf(year)];});return row;});download(`${pixelId(pixel)}_${product}.csv`,csv(rows));};
     $('downloadModel').onclick=()=>{if(!modelData){note('Select a longer period to fit the model.');return;}const d=modelData;download(`pixel_model_${pixelId(state.pixel)}.csv`,csv(d.rows.map((row,k)=>{const out={pixel:pixelId(state.pixel),latitude:pixels[state.pixel][1],longitude:pixels[state.pixel][0],year:row.year,observed:row.observed,fitted:d.model.pred[k],reference_only_fit:d.base.pred[k],reference:state.benchmark,reference_value:row.reference,oisst_annual_mean_sst:row.sst,index_lead_years:state.lag,climate_year:row.year-state.lag,product:meta.products[d.product].name,metric:d.metric,r2:d.model.r2,leave_one_year_out_r2:d.model.cvR2};climate.modes.forEach((m,j)=>{out[m]=row.indices[j];});d.names.forEach((name,j)=>{out[`${name}_share_r2`]=d.model.shares[j];out[`${name}_coefficient_per_sd`]=d.model.beta[j];out[`${name}_predictor_mean`]=d.model.means[j];out[`${name}_predictor_sd`]=d.model.scales[j];});return out;})));};
@@ -336,7 +362,7 @@
       climateZ=Object.fromEntries(climate.modes.map(m=>[m,S.standardize(climate.annual.values[m].filter((_,i)=>climate.annual.years[i]>=1982))]));
       const params=new URLSearchParams(location.search);if(['mur','oisst'].includes(params.get('product')))state.product=params.get('product');$('product').value=state.product;if(params.get('variable')==='outlook_probability'){state.mapMode='probability';$('metric').value='outlook_probability';}else if(meta.metrics.includes(params.get('variable'))){state.metric=params.get('variable');$('metric').value=state.metric;}
       state.pixel=params.has('lat')&&params.has('lon')?nearest(Number(params.get('lat')),Number(params.get('lon'))):nearest(21.4,39.05);
-      forecastAvailability();makeMap(land);setYearControls();bind();$('climateSource').value='latest';$('climateStep').value='monthly';$('climateStep').disabled=true;await renderMap();renderClimate();renderOutlook();document.documentElement.dataset.ready='true';
+      forecastAvailability();makeMap(land);setYearControls();bind();$('climateSource').value='latest';$('climateStep').value='monthly';climateDateControls();renderLatestIndices();await renderMap();renderClimate();renderOutlook();document.documentElement.dataset.ready='true';
     }catch(e){console.error(e);$('loadingText').textContent=`Atlas could not open: ${e.message}. Please reload.`;document.documentElement.dataset.error=e.message;}
   }
   window.AtlasDebug={state,get meta(){return meta;},get pixels(){return pixels;},get model(){return modelData;},get outlook(){return outlook;},get map(){return map;}};
