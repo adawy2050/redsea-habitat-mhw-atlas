@@ -1,6 +1,7 @@
 /* Red Sea Habitat Heatwave Atlas. All scientific arrays are fetched locally. */
 (() => {
   'use strict';
+  const RELEASE='20261018-gulf';
   const $ = id => document.getElementById(id), S = window.AtlasStats;
   const labels = {Nino34: 'Niño-3.4', IOD: 'IOD', NAO: 'NAO', AO: 'AO', EAWR: 'EAWR', NAtl_SSTA: 'N. Atlantic SST', PDO: 'PDO',localSst:'Annual SST (OISST)'};
   const modeColors = {Nino34:'#c43d32', IOD:'#007d8a', NAO:'#7e52a0', AO:'#366aa2', EAWR:'#99700d', NAtl_SSTA:'#b52a74', PDO:'#39813c',localSst:'#7c660d'};
@@ -33,16 +34,16 @@
   }
   function note(message) { $('toast').textContent=message; $('toast').hidden=false; clearTimeout(note.timer); note.timer=setTimeout(()=>{$('toast').hidden=true;},4000); }
   function loading(message) { $('loadingText').textContent=message; $('loading').hidden=false; }
-  async function json(path) { const r=await fetch(path); if(!r.ok)throw Error(`${path}: HTTP ${r.status}`); return r.json(); }
+  async function json(path) { const r=await fetch(`${path}?v=${RELEASE}`); if(!r.ok)throw Error(`${path}: HTTP ${r.status}`); return r.json(); }
   async function array(product, metric) {
     const key=`${product}_${metric}`;
-    if(!state.arrays.has(key)) state.arrays.set(key, fetch(`./data/${key}.f32`).then(r=>{if(!r.ok)throw Error(`Unable to load ${key}`);return r.arrayBuffer();}).then(buffer=>{
+    if(!state.arrays.has(key)) state.arrays.set(key, fetch(`./data/${key}.f32?v=${RELEASE}`).then(r=>{if(!r.ok)throw Error(`Unable to load ${key}`);return r.arrayBuffer();}).then(buffer=>{
       const a=new Float32Array(buffer), p=meta.products[product];
       if(a.length!==p.years.length*p.cells.length)throw Error(`Unexpected data dimensions: ${key}`);return a;
     }).catch(e=>{state.arrays.delete(key);throw e;}));
     return state.arrays.get(key);
   }
-  async function forecastArray(product,name){const key=`${product}_outlook_${name}`;if(!state.arrays.has(key))state.arrays.set(key,fetch(`./data/${key}.f32`).then(r=>{if(!r.ok)throw Error(`Unable to load point forecast ${name}`);return r.arrayBuffer();}).then(b=>new Float32Array(b)));return state.arrays.get(key);}
+  async function forecastArray(product,name){const key=`${product}_outlook_${name}`;if(!state.arrays.has(key))state.arrays.set(key,fetch(`./data/${key}.f32?v=${RELEASE}`).then(r=>{if(!r.ok)throw Error(`Unable to load point forecast ${name}`);return r.arrayBuffer();}).then(b=>new Float32Array(b)));return state.arrays.get(key);}
   async function pointForecast(product,pixel){
     const info=outlook.pixelOutlooks[product];if(!info)return null;const index=sourceIndex(pixel,product),names=['probability','baseline','threshold','skill','skill_all','brier','baseline_brier','n_high','alpha'];
     const arrays=await Promise.all(names.map(name=>forecastArray(product,name))),values=Object.fromEntries(names.map((name,i)=>[name,arrays[i][index]]));
@@ -88,7 +89,7 @@
     satelliteLayer=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,crossOrigin:true,attribution:'Imagery © Esri, Vantor, Earthstar Geographics, GIS User Community'}).addTo(map);
     map.createPane('habitatCoverage');map.getPane('habitatCoverage').style.zIndex=390;map.getPane('habitatCoverage').style.pointerEvents='none';
     const empty='data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
-    for(const habitat of meta.habitats){const keys=new Set(coverageMeta.tiles[habitat]);const Coverage=L.TileLayer.extend({getTileUrl(coords){const key=`${coords.z}/${coords.x}/${coords.y}`;return keys.has(key)?new URL(`./coverage/${habitat}/${key}.png`,document.baseURI).href:empty;}});coverageLayers[habitat]=new Coverage('',{pane:'habitatCoverage',minZoom:4,maxNativeZoom:12,maxZoom:16,opacity:.95,crossOrigin:true,errorTileUrl:empty}).addTo(map);}
+    for(const habitat of meta.habitats){const keys=new Set(coverageMeta.tiles[habitat]);const Coverage=L.TileLayer.extend({getTileUrl(coords){const key=`${coords.z}/${coords.x}/${coords.y}`;return keys.has(key)?new URL(`./coverage/${habitat}/${key}.png?v=${RELEASE}`,document.baseURI).href:empty;}});coverageLayers[habitat]=new Coverage('',{pane:'habitatCoverage',minZoom:4,maxNativeZoom:12,maxZoom:16,opacity:.95,crossOrigin:true,errorTileUrl:empty}).addTo(map);}
     for(const [name,lat,lon,kind] of [['EGYPT',27.7,30.3,'country'],['SAUDI ARABIA',25.7,43.5,'country'],['SUDAN',20.8,33.5,'country'],['ERITREA',15.7,37.4,'country'],['YEMEN',15.8,47,'country'],['SOMALIA',9.6,47.5,'country'],['Red Sea',22.7,38.9,'sea'],['Gulf of Aden',12.5,47.8,'sea']]) {
       L.tooltip({permanent:true,direction:'center',className:`country-label ${kind==='sea'?'sea-label':''}`,interactive:false}).setLatLng([lat,lon]).setContent(name).addTo(map);
     }
