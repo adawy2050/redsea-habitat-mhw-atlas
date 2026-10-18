@@ -5,6 +5,7 @@ Only rendered images are exported; original GIS geometries/attributes stay local
 from pathlib import Path
 import json
 import geopandas as gpd
+import pandas as pd
 import numpy as np
 from PIL import Image
 from rasterio.features import rasterize
@@ -18,7 +19,10 @@ ORIGIN=20037508.342789244
 
 
 def main():
-    frame=gpd.read_file(SOURCE).to_crs(3857)
+    frames=[gpd.read_file(SOURCE).to_crs(3857)]
+    gulf=ROOT.parent/'arabian_gulf_ghrsst_habitat/data/derived/habitat_layers_arabian_persian_gulf.gpkg'
+    if gulf.exists():frames.append(gpd.read_file(gulf).to_crs(3857))
+    frame=gpd.GeoDataFrame(pd.concat(frames,ignore_index=True),crs=3857)
     index={'maxNativeZoom':12,'minZoom':4,'colors':{h:'#%02x%02x%02x'%rgb for h,rgb in COLORS.items()},
         'source':'UNEP-WCMC study inventories: coral 2021, seagrass 2021, mangroves 2010',
         'attributionUrl':'https://www.unep-wcmc.org/','format':'Rendered publication map only; original polygons are not distributed',

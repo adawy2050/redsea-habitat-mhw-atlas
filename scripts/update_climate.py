@@ -228,7 +228,7 @@ def main():
             cut=cutoff(train)
             baseline=float(((train.observed_mhw_days>cut).sum()+.5)/(len(train)+1))
             targets.append({'available':True,'product':product,'habitat':habitat,'region':region,
-                'scope':'ecoregion','season':season,'seasonStart':str(target.date()),'seasonEnd':str((target+pd.DateOffset(months=3)-pd.Timedelta(days=1)).date()),
+                'scope':'ecoregion','basin':next((b['id'] for b in metadata.get('basins',[]) if metadata['regions'].index(region) in b['regions']),'redsea'),'season':season,'seasonStart':str(target.date()),'seasonEnd':str((target+pd.DateOffset(months=3)-pd.Timedelta(days=1)).date()),
                 'leadMonths':lead,'issueDate':str(issue.date()),'predictorFirstMonth':str(window[0]),'predictorLastMonth':str(window[-1]),
                 'probability':probability,'historicalProbability':baseline,'highExposureThresholdDays':cut,
                 'trainingSeasons':len(train),'trainingFirstYear':int(train.season_start_year.min()),'trainingLastYear':int(train.season_start_year.max()),

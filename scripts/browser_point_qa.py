@@ -10,7 +10,7 @@ with sync_playwright() as p:
     errors=[];http=[]
     page.on('pageerror',lambda e:errors.append(str(e)))
     page.on('response',lambda r:http.append([r.status,r.url]) if r.status>=400 else None)
-    page.goto('http://127.0.0.1:8765/',wait_until='networkidle')
+    page.goto('http://127.0.0.1:8765/?basin=redsea',wait_until='networkidle')
     page.wait_for_function("document.documentElement.dataset.ready==='true'",timeout=60000)
     page.wait_for_function("document.querySelector('#pointProbability').textContent!=='—'")
     page.locator('#outlookScope').select_option('overall')

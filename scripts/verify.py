@@ -11,12 +11,16 @@ pixels = json.loads((data / 'pixels.json').read_text())['rows']
 validation = json.loads((data / 'validation.json').read_text())
 manifest = json.loads((data / 'manifest.json').read_text())
 outlook = json.loads((data / 'outlook.json').read_text())
-assert len(pixels) == meta['pixels'] == 49408
+assert len(pixels) == meta['pixels'] == sum(b['pixels'] for b in meta['basins'])
 assert len({(p[0],p[1]) for p in pixels}) == len(pixels)
-assert all(0 < p[2] <= 7 and p[3] in (0,1,2) for p in pixels)
+assert all(0 < p[2] <= 7 and p[3] in range(len(meta['regions'])) for p in pixels)
+assert all(sum(p[3] in b['regions'] for b in meta['basins'])==1 for p in pixels)
 assert all(0 <= p[6] <= 5 for p in pixels)
 assert validation['allChecksPassed'] and len(validation['checks']) == 108
 assert validation['maxSummaryDifference'] < .00015
+gulf=json.loads((data/'gulf_validation.json').read_text())
+assert gulf['allChecksPassed']
+assert all(c['annualMonthlyDaysMaxDifference']<1e-4 for c in gulf['nativeSeasonalChecks'])
 for key, product in meta['products'].items():
     n = len(product['cells'])
     assert all(0 <= p[4 if key == 'mur' else 5] < n for p in pixels)
@@ -72,7 +76,7 @@ for habitat,keys in coverage['tiles'].items():
         with path.open('rb') as file:
             assert file.read(8)==b'\x89PNG\r\n\x1a\n'
         coverage_count+=1
-assert coverage_count==5864
+assert coverage_count>=5864
 print(f"PASS: {len(pixels):,} unique habitat cells; 108 summary checks; native-array dimensions, missing values, indices and asset checksums.")
 print(f'PASS: {coverage_count:,} rendered habitat coverage tiles match the map index.')
 print('PASS: native seasonal histories, current pixel probabilities, coefficients and chronological backtest arrays.')

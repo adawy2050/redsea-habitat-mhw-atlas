@@ -1,12 +1,14 @@
-# Red Sea Habitat Heatwave Atlas
+# Red Sea & Arabian Gulf Habitat Heatwave Atlas
 
-A static, interactive atlas of **49,408 habitat grid cells** across the Red Sea and Gulf of Aden. It displays coral, seagrass and mangrove habitat cells, using the corrected habitat attachments from the manuscript analysis. All map and time-series values are real study data.
+A static, interactive atlas of **65,348 habitat grid cells**: 49,408 in the Red Sea and Gulf of Aden, and 15,940 in the Arabian Gulf and Gulf of Oman. It uses the two independent study pipelines, with unique habitat-cell sampling and valid marine SST attachments. Original Red Sea annual histories and pixel forecasts are preserved unchanged.
 
 **Website:** https://adawy2050.github.io/redsea-habitat-mhw-atlas/
 
 ## Explore
 
+- Select both study areas, the Red Sea, or the Arabian Gulf; filter their MEOW ecoregions.
 - Animate annual habitat-cell maps for six marine heatwave metrics.
+- Distinguish solid observed series from dotted annual model fits; toggle fitted linear trends in history and climate charts.
 - Switch between satellite imagery and a coastline basemap; show separate coral, seagrass and mangrove coverage maps.
 - Click a cell to inspect its source SST coordinate and sampling distance.
 - Compare up to five pinned cells with the selected cell.
@@ -49,27 +51,29 @@ The climate panel also shows the selected point's next-season forecast with its 
 
 See [DATA_METHODS.md](DATA_METHODS.md). Browser data are in `dist/data/`. `metadata.json` describes native cell coordinates and periods; `pixels.json` links habitat coordinates to those native SST cells. Binary `.f32` files are little-endian float32 arrays. Annual and seasonal histories are ordered **year × native source cell**. Forecast probabilities and scores have one value per native cell; backtests are **test year × native cell**, and coefficients are **native cell × seven coefficients**. Missing intensity/duration values are NaNs.
 
-`validation.json` reports comparison of every habitat–ecoregion annual series and all six metrics with the corrected manuscript summaries. `manifest.json` includes asset checksums and hashes of the corrected habitat attachment and climate inputs.
+`validation.json` records the 108 Red Sea annual-summary checks. `gulf_validation.json` records Gulf source-summary comparisons, duplicate-row checks, marine attachment, native seasonal/annual consistency and source completeness. `scripts/test_multibasin.py` also compares matching Gulf source values and checks that Red Sea annual histories, pixel coefficients, backtests and probabilities remain unchanged. `manifest.json` includes asset checksums and hashes of the corrected habitat attachment and climate inputs.
 
-Each pixel forecast is fitted to its own source-cell seasonal MHW history, threshold and training-only choice of regularisation. Habitat-wide and regional forecasts instead use their corresponding mean exposure histories. Repeated habitat attachments to one SST cell share that cell's forecast. Pixel skill is tested independently; finer spatial support does not guarantee higher skill.
+Each pixel forecast is fitted to its own source-cell seasonal MHW history, threshold and training-only choice of regularisation. Habitat-wide and regional forecasts instead use their corresponding mean exposure histories. Whole-habitat forecasts are fitted separately for each basin; choosing both study areas shows both sets. Repeated habitat attachments to one SST cell share that cell's forecast. Pixel skill is tested independently; finer spatial support does not guarantee higher skill.
 
 The selected-cell multivariate model is calculated by `dist/stats.js`. It is a full-record statistical fit, separate from the manuscript's chronological seasonal warning analysis. Model output changes when the selected pixel, outcome, years, reference or lead changes. The paired detrending switch affects only the paired plot.
 
 ## Rebuild from the original study workspace
 
 ```powershell
-python .\scripts\build_data.py
-python .\scripts\build_seasonal_pixels.py
+python .\scripts\build_multibasin.py
 python .\scripts\update_climate.py
 python .\scripts\verify.py
 node .\scripts\test_stats.cjs
 python .\scripts\test_outlook.py
 python .\scripts\test_pixel_outlook.py
+python .\scripts\test_multibasin.py
 ```
 
-The builder requires the original corrected attachment table, event catalogue, OISST annual metrics/daily yearly SST files and cached NOAA indices. It reads the original files without changing them. A private `_cache/` speeds later rebuilds and is excluded from Git. The published website works directly from the included static files without those inputs.
+The combined builder reads `_cache/redsea_atlas_base` (the preserved original display package) and `_cache/gulf_extracted` (the compact remote extraction), plus the Gulf annual source tables in `_cache/gulf_source`. These private rebuild inputs are excluded from Git. The public website and scheduled climate refresh work directly from the included static files. The original Red Sea package is also recoverable from Git commit `8381735`; `build_data.py` and `build_seasonal_pixels.py` remain the original Red Sea-only source builders.
 
-`scripts/build_coverage.py` renders the original local habitat inventory to transparent map tiles. It requires GeoPandas, Rasterio and Pillow. `scripts/build_seasonal_pixels.py` reconstructs native-cell seasonal histories from the saved events and checks annual totals and monthly habitat summaries. `scripts/update_climate.py` requires NumPy, pandas and SciPy and works from the included seasonal histories and training cases; scheduled refreshes never need the large original event or SST archives. `scripts/test_pixel_outlook.py` compares batched forecasts with independent scalar fits and sampled nested backtests.
+`scripts/extract_gulf_remote.py --root STUDY_ROOT --output NEW_ATLAS_CACHE` runs on the Gulf study server and reads its native annual metrics, full native event catalogues and daily SST. It writes only a separate atlas transfer cache. The Gulf extraction retains 15,940 of 15,996 known-ecoregion locations within the 5 km MUR marine-attachment limit, reattaches 1,715 coastal locations and excludes four unknown-ecoregion records. Repeated identical annual rows are counted once. No seagrass records occur in the source Gulf of Oman inventory.
+
+`scripts/build_coverage.py` renders both original local habitat inventories to transparent map tiles. It requires GeoPandas, Rasterio and Pillow. `scripts/build_seasonal_pixels.py` reconstructs native-cell seasonal histories from the saved events and checks annual totals and monthly habitat summaries. `scripts/update_climate.py` requires NumPy, pandas and SciPy and works from the included seasonal histories and training cases; scheduled refreshes never need the large original event or SST archives. `scripts/test_pixel_outlook.py` compares batched forecasts with independent scalar fits and sampled nested backtests.
 
 ## Sources and attribution
 

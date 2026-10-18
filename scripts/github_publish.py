@@ -68,7 +68,7 @@ def main():
         print('Created public repository:',repo['html_url'],flush=True)
     elif repo.get('size',0)>0:
         contents=api('GET',repo_path+'/contents/README.md',optional=True)
-        if not contents or not base64.b64decode(contents.get('content','')).decode(errors='replace').startswith('# Red Sea Habitat Heatwave Atlas'):
+        if not contents or not base64.b64decode(contents.get('content','')).decode(errors='replace').startswith(('# Red Sea Habitat Heatwave Atlas','# Red Sea & Arabian Gulf Habitat Heatwave Atlas')):
             raise SystemExit('An unrelated nonempty repository has this name; it was left unchanged.')
     # Credentials live only in child-process environment, never command arguments/config files.
     env=os.environ.copy()

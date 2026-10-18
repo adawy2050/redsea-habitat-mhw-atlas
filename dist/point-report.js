@@ -28,8 +28,11 @@
     y=heading(`Annual ${r.metricInfo.name.toLowerCase()}`,y);
     const scratch=document.createElement('div');scratch.style.cssText='position:fixed;left:-10000px;top:0;width:1100px;height:390px';document.body.append(scratch);
     let image;
-    try{await Plotly.newPlot(scratch,[{x:r.product.years,y:r.histories[r.metric],mode:'lines+markers',type:'scatter',line:{color:'#1768ac',width:2},marker:{size:4}}],
-      {width:1100,height:390,paper_bgcolor:'#fff',plot_bgcolor:'#fff',margin:{l:75,r:25,t:10,b:55},font:{family:'Arial',size:15,color:'#34465b'},xaxis:{tickformat:'d',gridcolor:'#e8edf3'},yaxis:{title:r.metricInfo.axis,gridcolor:'#e8edf3',zeroline:false}}, {staticPlot:true,displayModeBar:false});image=await Plotly.toImage(scratch,{format:'png',width:1100,height:390,scale:1.5});}
+    const traces=[{x:r.product.years,y:r.histories[r.metric],name:'Observed',mode:'lines+markers',type:'scatter',line:{color:'#1768ac',width:2},marker:{size:4}}];
+    const valid=r.histories[r.metric].map((v,i)=>Number.isFinite(v)?i:-1).filter(i=>i>=0);
+    if(valid.length>=3){const x=valid.map(i=>r.product.years[i]),fit=window.AtlasStats.fit(valid.map(i=>r.histories[r.metric][i]),[x]);traces.push({x,y:fit.pred,name:'Fitted linear trend',type:'scatter',mode:'lines',line:{color:'#34465b',width:2,dash:'dot'}});}
+    try{await Plotly.newPlot(scratch,traces,
+      {width:1100,height:390,paper_bgcolor:'#fff',plot_bgcolor:'#fff',margin:{l:75,r:25,t:35,b:55},legend:{orientation:'h',y:1.15},font:{family:'Arial',size:15,color:'#34465b'},xaxis:{tickformat:'d',gridcolor:'#e8edf3'},yaxis:{title:r.metricInfo.axis,gridcolor:'#e8edf3',zeroline:false}}, {staticPlot:true,displayModeBar:false});image=await Plotly.toImage(scratch,{format:'png',width:1100,height:390,scale:1.5});}
     finally{Plotly.purge(scratch);scratch.remove();}
     doc.addImage(image,'PNG',X,y,W,64);y+=70;
     doc.setFontSize(8);doc.setTextColor(...blue);doc.textWithLink('Open this point in the interactive atlas',X,Math.min(y,275),{url:r.webUrl});
@@ -41,11 +44,11 @@
     doc.addPage();title('Seasonal validation and habitat context',`${coordinate} | ${r.product.name} | Chronological training-only predictions`);
     y=40;
     if(r.forecast){y=para(`Post-baseline validation: ${r.forecast.nTest} seasons; Brier score ${num(r.forecast.brier,4)} versus baseline ${num(r.forecast.baseline_brier,4)}. Full retrospective validation: ${r.forecast.nTestRetrospective} seasons, skill ${pct(r.forecast.skill_all)}.`,y);
-      y=table(['Season start\nyear','MHW days','Observed high\n(1=yes)','Model\nprobability','Baseline\nprobability','Baseline available'],r.validation.map(v=>[v.year,num(v.days,0),num(v.observedHigh,0),pct(v.probability),pct(v.baseline),v.postBaseline?'Yes':'No']),y,{styles:{fontSize:7,cellPadding:1.5}});
+      y=table(['Season start\nyear','MHW days','Observed high\n(1=yes)','Model\nprobability','Baseline\nprobability','SST baseline ready'],r.validation.map(v=>[v.year,num(v.days,0),num(v.observedHigh,0),pct(v.probability),pct(v.baseline),v.postBaseline?'Yes':'No']),y,{styles:{fontSize:7,cellPadding:1.5}});
     }
     if(y>225){doc.addPage();title('Habitat context and climate associations',`${coordinate} | ${r.product.name}`);y=42;}
     y=heading('Habitat-scale context',y);
-    y=table(['Habitat','Scope','Probability','Baseline','Brier skill'],r.context.map(t=>[t.habitat,t.scope==='overall'?'Whole habitat':t.region,pct(t.probability),pct(t.historicalProbability),pct(t.backtest.scores.baseline_available.skill)]),y,{styles:{fontSize:7,cellPadding:1.5}});
+    y=table(['Habitat','Scope','Probability','Baseline','Brier skill'],r.context.map(t=>[t.habitat,t.scope==='overall'?`${t.region} (whole habitat)`:t.region,pct(t.probability),pct(t.historicalProbability),pct(t.backtest.scores.baseline_available.skill)]),y,{styles:{fontSize:7,cellPadding:1.5}});
     if(r.association){
       if(y>202){doc.addPage();title('Annual climate associations',`${coordinate} | selected analysis period`);y=42;}
       const a=r.association;y=heading('Annual pixel model',y);y=para(`Analysis years ${a.rows[0].year}-${a.rows.at(-1).year}; outcome ${r.metricInfo.name.toLowerCase()}. Fitted R2: ${num(a.model.r2,3)}. Leave-one-year-out R2: ${num(a.model.cvR2,3)}. Shares below allocate full-record fitted variation; they are separate from the seasonal logistic probability model.`,y);
@@ -56,7 +59,7 @@
     y=para('SST: NASA/JPL GHRSST MUR v4.1 and NOAA OISST v2.1. Habitats: UNEP-WCMC study inventories. Climate: NOAA CPC, PSL and NCEI. The seasonal model uses Nino-3.4, NAO, AO, EAWR, North Atlantic SST anomaly and PDO. The IOD feed is delayed and is shown separately in the atlas.',y,8);
     y=para('High exposure exceeds the training same-season 80th percentile, with a 10-day floor. Every backtest refits using earlier seasons only, including thresholds, detrending, standardisation and regularisation. A source cell may be shared by several habitat locations. These results describe surface heatwave exposure, not species-specific damage.',y,8);
     y=heading('Contacts',y);y=para('Ahmed Eladawy, JAMSTEC: ahmed.eladawy@jamstec.go.jp\nMohammed Shaltout, Alexandria University: mohamed.shaltot@alexu.edu.eg',y,8);
-    const pages=doc.getNumberOfPages();for(let page=1;page<=pages;page++){doc.setPage(page);doc.setDrawColor(215,222,230);doc.line(X,282,195,282);doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(...grey);doc.text('Red Sea Habitat Heatwave Atlas | Eladawy & Shaltout',X,287);doc.text(`${page} / ${pages}`,195,287,{align:'right'});}
+    const pages=doc.getNumberOfPages();for(let page=1;page<=pages;page++){doc.setPage(page);doc.setDrawColor(215,222,230);doc.line(X,282,195,282);doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(...grey);doc.text('Red Sea & Arabian Gulf Habitat Heatwave Atlas | Eladawy & Shaltout',X,287);doc.text(`${page} / ${pages}`,195,287,{align:'right'});}
     doc.setProperties({title:`MHW point report: ${coordinate}`,author:'Ahmed Eladawy and Mohammed Shaltout',subject:'Habitat-cell history, seasonal probabilities and chronological validation'});
     doc.save(`MHW_${r.latitude.toFixed(2)}N_${r.longitude.toFixed(2)}E_${r.product.name.replaceAll(' ','_')}_report.pdf`);
   }
