@@ -14,7 +14,7 @@
     mhw_cumulative_intensity: {name:'Cumulative intensity', unit:'°C days', axis:'Cumulative intensity (°C days)', max:160, digits:1}
   };
   const state = {product:'mur', metric:'mhw_days',mapMode:'history', year:2025, basin:'all',region:'all', habitats:7, pixel:0, pins:[], arrays:new Map(),showTrend:true,climateTrend:false,
-    from:2003, to:2025, lag:0, benchmark:'trend', index:'Nino34', detrend:true, selectedModes:new Set(['Nino34','IOD','NAtl_SSTA']),
+    from:2003, to:2025, lag:0, benchmark:'trend', index:'Nino34', detrend:true, selectedModes:new Set(['Nino34','IOD','NAtl_SSTA','AO']),
     step:'monthly', scale:'standard', climateSource:'latest',climateFrom:null,climateTo:null,outlookRecord:'GHRSST MUR',outlookScope:'ecoregion',pixelOpacity:.7,showPixels:true,timer:null,generation:0};
   let meta, pixels, climate, map, pixelLayer, selectedMarker, sourceMarker, sourceLine, climateZ, mapLand,landLayer,satelliteLayer,coverageMeta,liveClimate,outlook;
   const coverageLayers={};
@@ -103,9 +103,11 @@
         const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);ctx.globalAlpha=state.showPixels?state.pixelOpacity:0;const p=meta.products[state.product],n=p.cells.length,yi=p.years.indexOf(state.year),info=mapInfo(),bounds=this._map.getBounds().pad(.03);
         const step=Math.max(1.7,Math.abs(this._map.latLngToContainerPoint([20,40.01]).x-this._map.latLngToContainerPoint([20,40]).x));
         let count=0;
-        for(let i=0;i<pixels.length;i++){const point=pixels[i];if(!visible(point))continue;count++;if(!bounds.contains([point[1],point[0]]))continue;
-          const v=state.mapMode==='probability'?this.probabilityArray[sourceIndex(i)]*100:this.a[yi*n+sourceIndex(i)],q=this._map.latLngToContainerPoint([point[1],point[0]]);ctx.fillStyle=color(v,info.max);ctx.fillRect(q.x-step/2,q.y-step/2,step,step);
-        }
+        const centre=this._map.getCenter(),key=[centre.lat,centre.lng,this._map.getZoom(),size.x,size.y,state.basin,state.region,state.habitats,state.product].join('|');
+        if(this.positionKey!==key){this.positionKey=key;this.positions=[];this.filteredCount=0;for(let i=0;i<pixels.length;i++){const point=pixels[i];if(!visible(point))continue;this.filteredCount++;if(!bounds.contains([point[1],point[0]]))continue;const q=this._map.latLngToContainerPoint([point[1],point[0]]);this.positions.push([i,q.x,q.y,sourceIndex(i)]);}}
+        count=this.filteredCount;
+        for(const [i,x,y,source] of this.positions){const v=state.mapMode==='probability'?this.probabilityArray[source]*100:this.a[yi*n+source];ctx.fillStyle=color(v,info.max);ctx.fillRect(x-step/2,y-step/2,step,step);}
+
         $('visibleCount').textContent=state.showPixels?`${count.toLocaleString()} habitat cells · click to explore`:'Inventory coverage · heatwave pixels hidden';
       }
     });
@@ -194,17 +196,18 @@
       return {year, observed:values[i], reference:state.benchmark==='trend'?year:sstSeries[sstIndex],
         indices:climate.modes.map(m=>climateIndex>=0?annual.values[m][climateIndex]:null),sst:sstSeries[sstIndex]};
     }).filter(r=>inYears(r.year)&&[r.observed,r.reference,...r.indices].every(S.finite));
-    if(rows.length<12){modelData=null;$('modelSample').textContent=`${rows.length} complete years · choose ≥12`;for(const id of ['modelR2','modelCv'])$(id).textContent='—';$('varianceBar').replaceChildren();$('shares').textContent='Select a longer period for the eight-predictor model.';renderPlot('modelPlot',[],layout({annotations:[{text:'Choose at least 12 complete years.',xref:'paper',yref:'paper',x:.5,y:.5,showarrow:false}]}),config);renderPaired(years,values,sstSeries);return;}
+    if(rows.length<12){modelData=null;$('modelSample').textContent=`${rows.length} complete years · choose ≥12`;for(const id of ['modelR2','modelCv'])$(id).textContent='—';$('varianceBar').replaceChildren();$('shares').textContent='Select a longer period for the eight-predictor model.';const modelRendering=renderPlot('modelPlot',[],layout({annotations:[{text:'Choose at least 12 complete years.',xref:'paper',yref:'paper',x:.5,y:.5,showarrow:false}]}),config);renderPaired(years,values,sstSeries);return;}
     const ys=rows.map(r=>r.year),y=rows.map(r=>r.observed),columns=[rows.map(r=>r.reference),...climate.modes.map((_,j)=>rows.map(r=>r.indices[j]))];
     const model=S.shapley(y,columns),base=S.fit(y,[columns[0]]),reference=state.benchmark==='trend'?'Long-term trend':'Annual SST (OISST)';
     modelData={rows,model,base,names:[reference,...climate.modes.map(m=>labels[m])],product,metric,pixel};
     $('modelSample').textContent=`${rows.length} complete years · ${ys[0]}–${ys.at(-1)}`;
     $('modelR2').textContent=number(model.r2,2);$('modelCv').textContent=number(model.cvR2,2);
-    renderPlot('modelPlot',[
+    const modelRendering=renderPlot('modelPlot',[
       {x:ys,y,type:'scatter',mode:'lines+markers',name:'Observed',line:{color:'#1768ac',width:2},marker:{size:4}},
       {x:ys,y:base.pred,type:'scatter',mode:'lines',name:reference,line:{color:'#8e9e8c',width:1.5,dash:'dot'}},
       {x:ys,y:model.pred,type:'scatter',mode:'lines',name:'Combined model',line:{color:'#253444',width:2,dash:'dot'}}
     ],layout({margin:{l:52,r:12,t:37,b:37},legend:{...baseLayout.legend,y:1.17,font:{size:9}},yaxis:{title:metricInfo[metric].unit},xaxis:{dtick:Math.max(1,Math.round((state.to-state.from)/7))}}),config);
+    modelRendering.then(()=>window.dispatchEvent(new Event('atlasmodelrender')));
     const colors=['#8591a0',...climate.modes.map(m=>modeColors[m])],bar=[];
     model.shares.forEach((v,j)=>{const e=document.createElement('span');e.style.width=`${v*100}%`;e.style.background=colors[j];e.title=`${modelData.names[j]}: ${number(v*100,1)}%`;bar.push(e);});$('varianceBar').replaceChildren(...bar);
     $('shares').replaceChildren(...model.shares.map((share,j)=>{const e=document.createElement('div');e.className='share-row';const dot=document.createElement('i');dot.style.background=colors[j];const name=document.createElement('span');name.textContent=modelData.names[j];const value=document.createElement('strong');value.textContent=`${number(share*100,1)}%`;value.title=`Coefficient per predictor SD: ${signed(model.beta[j],3)} ${metricInfo[metric].unit}`;e.append(dot,name,value);return e;}));
@@ -244,7 +247,8 @@
     const traces=modes.map(m=>{const raw=keep.map(d=>data.values[m][d.i]),y=state.scale==='standard'?S.standardize(raw):raw;return {x:keep.map(d=>d.x),y,type:'scatter',mode:'lines',name:labels[m],line:{color:modeColors[m],width:monthly?1.3:2},connectgaps:false};});
     if(state.climateTrend)for(let k=0;k<modes.length;k++){const m=modes[k],line=traces[k],valid=line.y.map((v,i)=>S.finite(v)?i:-1).filter(i=>i>=0);if(valid.length<3)continue;const x=valid.map(i=>monthly?Date.parse(keep[i].x)/86400000:keep[i].x),fit=S.fit(valid.map(i=>line.y[i]),[x]),rawFit=S.fit(valid.map(i=>data.values[m][keep[i].i]),[x]);traces.push({x:valid.map(i=>line.x[i]),y:fit.pred,type:'scatter',mode:'lines',name:`${labels[m]} · fitted trend`,line:{color:modeColors[m],width:1.8,dash:'dot'}});valid.forEach((i,j)=>climateExport[i][`${m}_linear_fit`]=rawFit.pred[j]);}
     const tickformat=monthly?(state.climateFrom===state.climateTo?'%b %Y':'%Y'):'d';
-    renderPlot('climatePlot',traces,layout({xaxis:{type:monthly?'date':'linear',tickformat,dtick:monthly?undefined:Math.max(1,Math.round((state.climateTo-state.climateFrom)/9))},yaxis:{title:state.scale==='standard'?'Standard deviations':'Original index values'},annotations:traces.length?[]:[{text:'Select one or more indices above.',xref:'paper',yref:'paper',x:.5,y:.5,showarrow:false}]}),config);
+    const climateRendering=renderPlot('climatePlot',traces,layout({xaxis:{type:monthly?'date':'linear',tickformat,dtick:monthly?undefined:Math.max(1,Math.round((state.climateTo-state.climateFrom)/9))},yaxis:{title:state.scale==='standard'?'Standard deviations':'Original index values'},annotations:traces.length?[]:[{text:'Select one or more indices above.',xref:'paper',yref:'paper',x:.5,y:.5,showarrow:false}]}),config);
+    climateRendering.then(()=>window.dispatchEvent(new Event('atlasclimaterender')));
     $('climateRangeNote').textContent=`${state.climateFrom}–${state.climateTo} · climate dates are independent of heatwave analysis years`;
     $('climateCaption').textContent=latest?`NOAA feeds checked ${liveClimate.asOf} · latest: ${monthLabel(Object.values(liveClimate.latestByMode).sort().at(-1))}; IOD: ${monthLabel(liveClimate.latestByMode.IOD)} · missing months remain blank.${monthly?'':' Annual values for incomplete years are means of available months (year to date).'}`:state.scale==='standard'?`${monthly?'Monthly':'Annual'} indices · standardised within ${state.climateFrom}–${state.climateTo} · downloads retain original values.`:'Original values; index units differ. Use standardised scale for direct comparison.';
   }
@@ -299,7 +303,7 @@
       const context=outlook.targets.filter(t=>t.available&&t.product===productInfo.name&&t.basin===pointBasin(point).id&&habitats.includes(t.habitat)&&(t.scope==='overall'||t.region===meta.regions[point[3]]));
       await window.AtlasReports.create({pixel:pixelId(pixel),latitude:point[1],longitude:point[0],habitats,region:meta.regions[point[3]],product:productInfo,
         source:productInfo.cells[sourceIndex(pixel,product)],distance:point[product==='mur'?6:7],metric,metricInfo:metricInfo[metric],histories,forecast,validation,seasonal,context,
-        association,updated:outlook.asOf,liveClimate,webUrl:`https://adawy2050.github.io/redsea-habitat-mhw-atlas/?lat=${point[1]}&lon=${point[0]}&product=${product}`});
+        association,scenarios:window.AtlasScenarios?.compute(),detail:await window.AtlasDetails?.load(pixel,product),dailyClimate:await window.AtlasDetails?.climate(),updated:outlook.asOf,liveClimate,webUrl:`https://adawy2050.github.io/redsea-habitat-mhw-atlas/?lat=${point[1]}&lon=${point[0]}&product=${product}`});
       note('Point report downloaded.');
     }catch(error){console.error(error);note(`Report could not be created: ${error.message}`);}
     finally{button.disabled=false;button.textContent='Create point report (PDF) ↓';}
@@ -320,7 +324,7 @@
     ctx.textAlign='right';ctx.fillText($('basemap').value==='satellite'?'Imagery © Esri, Vantor, Earthstar Geographics, GIS User Community · UNEP-WCMC habitats':'Natural Earth · UNEP-WCMC habitats · NASA/JPL · NOAA',w-20,h-18);
     canvas.toBlob(blob=>{if(!blob){note('Map image could not be generated.');return;}const a=document.createElement('a'),url=URL.createObjectURL(blob);a.href=url;a.download=`habitat_map_${state.product}_${state.year}.png`;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);},'image/png');
   }
-  function yearChanged(){state.year=Number($('year').value);pixelLayer.draw();updateMapText();Plotly.relayout('historyPlot',{'shapes[0].x0':state.year,'shapes[0].x1':state.year}).catch(()=>{});}
+  function yearChanged(){state.year=Number($('year').value);pixelLayer.draw();window.dispatchEvent(new Event('atlasmapyearchange'));updateMapText();Plotly.relayout('historyPlot',{'shapes[0].x0':state.year,'shapes[0].x1':state.year}).catch(()=>{});}
   function bind() {
     window.addEventListener('atlaslanguagechange',()=>{renderHistory();renderModel();renderClimate();});
     $('product').onchange=()=>{stop();state.product=$('product').value;forecastAvailability();setYearControls();renderMap();renderClimate();};
@@ -337,8 +341,8 @@
     $('fitMap').onclick=fitStudy;
     $('pinPixel').onclick=()=>{if(state.pins.includes(state.pixel)){note('This cell is already in the comparison.');return;}if(state.pins.length>=5){note('Compare up to five pinned cells. Remove one to add another.');return;}state.pins.push(state.pixel);renderHistory();note('Cell added. Select another cell on the map to compare.');};
     $('clearPins').onclick=()=>{state.pins=[];renderHistory();};
-    $('fromYear').onchange=()=>{state.from=Number($('fromYear').value);if(state.from>state.to){state.to=state.from;$('toYear').value=state.to;}renderHistory();renderModel();renderClimate();};
-    $('toYear').onchange=()=>{state.to=Number($('toYear').value);if(state.to<state.from){state.from=state.to;$('fromYear').value=state.from;}renderHistory();renderModel();renderClimate();};
+    $('fromYear').onchange=()=>{state.from=Number($('fromYear').value);if(state.from>state.to){state.to=state.from;$('toYear').value=state.to;}renderHistory();renderModel();renderClimate();window.dispatchEvent(new Event('atlasrangechange'));};
+    $('toYear').onchange=()=>{state.to=Number($('toYear').value);if(state.to<state.from){state.from=state.to;$('fromYear').value=state.from;}renderHistory();renderModel();renderClimate();window.dispatchEvent(new Event('atlasrangechange'));};
     $('benchmark').onchange=()=>{state.benchmark=$('benchmark').value;renderModel();};$('lag').onchange=()=>{state.lag=Number($('lag').value);renderModel();};
     $('pairedIndex').onchange=()=>{state.index=$('pairedIndex').value;renderModel();};$('detrend').onchange=()=>{state.detrend=$('detrend').checked;renderModel();};
     $('climateStep').onchange=()=>{state.step=$('climateStep').value;renderClimate();};$('climateScale').onchange=()=>{state.scale=$('climateScale').value;renderClimate();};
@@ -377,6 +381,12 @@
     }catch(e){console.error(e);$('loadingText').textContent=`Atlas could not open: ${e.message}. Please reload.`;document.documentElement.dataset.error=e.message;}
   }
   window.AtlasUI={
+    snapshot(){return {state:{...state},meta,pixels,climate,liveClimate,outlook,model:modelData,point:pixels[state.pixel],sourceIndex:sourceIndex(state.pixel),oisstIndex:sourceIndex(state.pixel,'oisst')};},
+    array:(p,m)=>m.startsWith('outlook_')?forecastArray(p,m.slice(8)):array(p,m),series,nearest,selectPixel,visible,mapInfo,pixelId,color,forecast:pointForecast,
+    get map(){return map;},
+    setYear(year){if(year===state.year||!meta.products[state.product].years.includes(year)||state.mapMode==='probability')return;$('year').value=year;yearChanged();},
+    setRange(from,to){state.from=Math.max(meta.products[state.product].years[0],Math.ceil(from));state.to=Math.min(2025,Math.floor(to));if(state.from>state.to)return;$('fromYear').value=state.from;$('toYear').value=state.to;renderHistory();renderModel();window.dispatchEvent(new Event('atlasrangechange'));},
+    redraw(){pixelLayer.draw();},
     async visit(step){
       state.basin=step.basin;state.region='all';state.habitats=7;state.product='mur';state.metric='mhw_days';state.mapMode=step.forecast?'probability':'history';
       $('basin').value=state.basin;$('product').value=state.product;$('metric').value=step.forecast?'outlook_probability':state.metric;document.querySelectorAll('input[name="habitat"]').forEach(e=>e.checked=true);regionControls();setYearControls();state.year=2025;$('year').value=state.year;
