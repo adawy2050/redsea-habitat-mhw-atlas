@@ -32,7 +32,7 @@ jobs:
           python scripts/verify.py
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add dist/data/climate_latest.json dist/data/outlook.json dist/data/manifest.json
+          git add dist/data
           if ! git diff --cached --quiet; then
             git commit -m 'Refresh monthly climate feeds and seasonal outlook'
             git push

@@ -1,0 +1,64 @@
+/* Fully browser-local point reports. No coordinates/data are sent to a server. */
+(() => {
+  const ascii=s=>String(s).replace(/[–—−]/g,'-').replace(/°/g,' deg').replace(/σ/g,'SD');
+  const num=(v,d=1)=>v===null||!Number.isFinite(v)?'-':Number(v).toFixed(d);
+  const pct=v=>`${num(v*100,1)}%`;
+  async function create(r){
+    const {jsPDF}=window.jspdf,doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
+    const ink=[23,33,46],blue=[23,79,134],grey=[85,101,117],W=180,X=15;
+    const title=(name,sub)=>{doc.setFont('helvetica','bold');doc.setFontSize(17);doc.setTextColor(...ink);doc.text(ascii(name),X,21);doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(...grey);doc.text(doc.splitTextToSize(ascii(sub),W),X,28);};
+    const heading=(name,y)=>{doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(...ink);doc.text(ascii(name),X,y);doc.setFont('helvetica','normal');return y+7;};
+    const para=(text,y,size=8.5)=>{doc.setFontSize(size);doc.setTextColor(...grey);const lines=doc.splitTextToSize(ascii(text),W);doc.text(lines,X,y);return y+lines.length*(size*.42)+4;};
+    const table=(head,body,y,extra={})=>{doc.autoTable({head:[head.map(ascii)],body:body.map(row=>row.map(ascii)),startY:y,margin:{left:X,right:X,bottom:19},theme:'striped',styles:{fontSize:8,cellPadding:2,overflow:'linebreak',textColor:ink},headStyles:{fillColor:blue,textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[243,246,249]},...extra});return doc.lastAutoTable.finalY+8;};
+    const coordinate=`${r.latitude.toFixed(2)} N, ${r.longitude.toFixed(2)} E`;
+    title('Habitat marine heatwave point report',`${coordinate} | ${r.product.name} | Generated ${new Date().toISOString().slice(0,10)}`);
+    let y=43;
+    y=table(['Location and sampling','Value'],[
+      ['Habitat grid cell',r.pixel],['Mapped habitat(s)',r.habitats.join(', ')],['Ecoregion',r.region],
+      ['Observed record',`${r.product.years[0]}-${r.product.years.at(-1)} | ${r.product.resolution} SST | baseline ${r.product.baseline}`],
+      ['Sampled SST centre',`${r.source[1].toFixed(3)} N, ${r.source[0].toFixed(3)} E (${num(r.distance,2)} km from habitat centre)`]
+    ],y,{columnStyles:{0:{cellWidth:46}},styles:{fontSize:8,cellPadding:1.8}});
+    y=heading('Upcoming-season outlook at this point',y);
+    if(r.forecast){const f=r.forecast;y=table(['Season','Point probability','Historical baseline','Brier skill','Test seasons'],[
+      [`${f.season} ${f.seasonStart.slice(0,4)}`,pct(f.probability),pct(f.baseline),pct(f.skill),String(f.nTest)]
+    ],y);
+      y=para(`Season: ${f.seasonStart} to ${f.seasonEnd}. High exposure: more than ${num(f.threshold,1)} MHW days at this source cell. Training: ${f.trainingYears[0]}-${f.trainingYears.at(-1)} (${f.trainingYears.length} seasons). ${f.leadMonths}-month lead; estimate updated ${r.updated}.`,y);
+      y=para('This model uses the point history itself. Brier skill is relative to a historical-probability baseline; negative values indicate worse held-out performance. Probabilities are research estimates, not operational alert levels.',y,8);
+    }else y=para('A current seasonal estimate is waiting for the required climate observations.',y);
+    y=heading(`Annual ${r.metricInfo.name.toLowerCase()}`,y);
+    const scratch=document.createElement('div');scratch.style.cssText='position:fixed;left:-10000px;top:0;width:1100px;height:390px';document.body.append(scratch);
+    let image;
+    try{await Plotly.newPlot(scratch,[{x:r.product.years,y:r.histories[r.metric],mode:'lines+markers',type:'scatter',line:{color:'#1768ac',width:2},marker:{size:4}}],
+      {width:1100,height:390,paper_bgcolor:'#fff',plot_bgcolor:'#fff',margin:{l:75,r:25,t:10,b:55},font:{family:'Arial',size:15,color:'#34465b'},xaxis:{tickformat:'d',gridcolor:'#e8edf3'},yaxis:{title:r.metricInfo.axis,gridcolor:'#e8edf3',zeroline:false}}, {staticPlot:true,displayModeBar:false});image=await Plotly.toImage(scratch,{format:'png',width:1100,height:390,scale:1.5});}
+    finally{Plotly.purge(scratch);scratch.remove();}
+    doc.addImage(image,'PNG',X,y,W,64);y+=70;
+    doc.setFontSize(8);doc.setTextColor(...blue);doc.textWithLink('Open this point in the interactive atlas',X,Math.min(y,275),{url:r.webUrl});
+    doc.addPage();title('Observed annual history',`${coordinate} | ${r.product.name} | MHW observations through ${r.product.years.at(-1)}`);
+    y=table(['Year','MHW days','Events','Mean duration\n(days)','Mean intensity\n(degC)','Max intensity\n(degC)','Cumulative\n(degC days)'],r.product.years.map((year,j)=>[
+      year,num(r.histories.mhw_days[j],0),num(r.histories.mhw_frequency[j],0),num(r.histories.mhw_mean_duration[j]),num(r.histories.mhw_mean_intensity[j],2),num(r.histories.mhw_max_intensity[j],2),num(r.histories.mhw_cumulative_intensity[j],1)
+    ]),40,{styles:{fontSize:7.3,cellPadding:1},columnStyles:{0:{cellWidth:15}}});
+    if(y<268)para('Intensity is temperature above the seasonal 90th-percentile threshold. A dash indicates no event intensity/duration. Cross-year event allocation follows the corrected manuscript pipeline.',y,8);
+    doc.addPage();title('Seasonal validation and habitat context',`${coordinate} | ${r.product.name} | Chronological training-only predictions`);
+    y=40;
+    if(r.forecast){y=para(`Post-baseline validation: ${r.forecast.nTest} seasons; Brier score ${num(r.forecast.brier,4)} versus baseline ${num(r.forecast.baseline_brier,4)}. Full retrospective validation: ${r.forecast.nTestRetrospective} seasons, skill ${pct(r.forecast.skill_all)}.`,y);
+      y=table(['Season start\nyear','MHW days','Observed high\n(1=yes)','Model\nprobability','Baseline\nprobability','Baseline available'],r.validation.map(v=>[v.year,num(v.days,0),num(v.observedHigh,0),pct(v.probability),pct(v.baseline),v.postBaseline?'Yes':'No']),y,{styles:{fontSize:7,cellPadding:1.5}});
+    }
+    if(y>225){doc.addPage();title('Habitat context and climate associations',`${coordinate} | ${r.product.name}`);y=42;}
+    y=heading('Habitat-scale context',y);
+    y=table(['Habitat','Scope','Probability','Baseline','Brier skill'],r.context.map(t=>[t.habitat,t.scope==='overall'?'Whole habitat':t.region,pct(t.probability),pct(t.historicalProbability),pct(t.backtest.scores.baseline_available.skill)]),y,{styles:{fontSize:7,cellPadding:1.5}});
+    if(r.association){
+      if(y>202){doc.addPage();title('Annual climate associations',`${coordinate} | selected analysis period`);y=42;}
+      const a=r.association;y=heading('Annual pixel model',y);y=para(`Analysis years ${a.rows[0].year}-${a.rows.at(-1).year}; outcome ${r.metricInfo.name.toLowerCase()}. Fitted R2: ${num(a.model.r2,3)}. Leave-one-year-out R2: ${num(a.model.cvR2,3)}. Shares below allocate full-record fitted variation; they are separate from the seasonal logistic probability model.`,y);
+      y=table(['Predictor','Share of total variance','Coefficient per predictor SD'],a.names.map((name,j)=>[name,pct(a.model.shares[j]),num(a.model.beta[j],3)]),y,{styles:{fontSize:7,cellPadding:1.5}});
+    }
+    if(y>190){doc.addPage();title('Sources, methods and contacts',coordinate);y=42;}
+    y=heading('Sources and interpretation',y);
+    y=para('SST: NASA/JPL GHRSST MUR v4.1 and NOAA OISST v2.1. Habitats: UNEP-WCMC study inventories. Climate: NOAA CPC, PSL and NCEI. The seasonal model uses Nino-3.4, NAO, AO, EAWR, North Atlantic SST anomaly and PDO. The IOD feed is delayed and is shown separately in the atlas.',y,8);
+    y=para('High exposure exceeds the training same-season 80th percentile, with a 10-day floor. Every backtest refits using earlier seasons only, including thresholds, detrending, standardisation and regularisation. A source cell may be shared by several habitat locations. These results describe surface heatwave exposure, not species-specific damage.',y,8);
+    y=heading('Contacts',y);y=para('Ahmed Eladawy, JAMSTEC: ahmed.eladawy@jamstec.go.jp\nMohammed Shaltout, Alexandria University: mohamed.shaltot@alexu.edu.eg',y,8);
+    const pages=doc.getNumberOfPages();for(let page=1;page<=pages;page++){doc.setPage(page);doc.setDrawColor(215,222,230);doc.line(X,282,195,282);doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(...grey);doc.text('Red Sea Habitat Heatwave Atlas | Eladawy & Shaltout',X,287);doc.text(`${page} / ${pages}`,195,287,{align:'right'});}
+    doc.setProperties({title:`MHW point report: ${coordinate}`,author:'Ahmed Eladawy and Mohammed Shaltout',subject:'Habitat-cell history, seasonal probabilities and chronological validation'});
+    doc.save(`MHW_${r.latitude.toFixed(2)}N_${r.longitude.toFixed(2)}E_${r.product.name.replaceAll(' ','_')}_report.pdf`);
+  }
+  window.AtlasReports={create};
+})();

@@ -96,6 +96,7 @@ def main():
     if changes.returncode:
         git('commit','-m','Build interactive habitat-pixel heatwave atlas with validated study data')
     git('push','-u','origin','main')
+    expected_sha=git('rev-parse','HEAD').stdout.strip()
     print('SOURCE_PUSHED',repo['html_url'],flush=True)
     pages=api('GET',repo_path+'/pages',optional=True)
     if pages is None:
@@ -105,7 +106,7 @@ def main():
         pages=api('PUT',repo_path+'/pages',{'build_type':'workflow'})
     last=None
     for k in range(30):
-        runs=api('GET',repo_path+'/actions/workflows/pages.yml/runs?per_page=1').get('workflow_runs',[])
+        runs=[run for run in api('GET',repo_path+'/actions/workflows/pages.yml/runs?per_page=5').get('workflow_runs',[]) if run['head_sha']==expected_sha]
         if runs:
             run=runs[0]
             status=(run['status'],run.get('conclusion'))

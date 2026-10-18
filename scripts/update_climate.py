@@ -16,6 +16,7 @@ from urllib.request import Request, urlopen
 import numpy as np
 import pandas as pd
 from scipy.special import expit
+from pixel_outlook import predict_all
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / 'dist/data'
@@ -197,6 +198,9 @@ def main():
                      'values':{m:combined[m].tolist() for m in MODES}},
           'sources':{m:source for m,_,source in results}}
     training=pd.read_csv(DATA/'seasonal_training.csv')
+    seasonal_groups=json.loads((DATA/'seasonal_groups.json').read_text())
+    metadata=json.loads((DATA/'metadata.json').read_text())
+    pixel_metadata={}
     issue=now.replace(day=1)
     targets=[]
     for lead in [1,2,3]:
@@ -224,16 +228,63 @@ def main():
             cut=cutoff(train)
             baseline=float(((train.observed_mhw_days>cut).sum()+.5)/(len(train)+1))
             targets.append({'available':True,'product':product,'habitat':habitat,'region':region,
-                'season':season,'seasonStart':str(target.date()),'seasonEnd':str((target+pd.DateOffset(months=3)-pd.Timedelta(days=1)).date()),
+                'scope':'ecoregion','season':season,'seasonStart':str(target.date()),'seasonEnd':str((target+pd.DateOffset(months=3)-pd.Timedelta(days=1)).date()),
                 'leadMonths':lead,'issueDate':str(issue.date()),'predictorFirstMonth':str(window[0]),'predictorLastMonth':str(window[-1]),
                 'probability':probability,'historicalProbability':baseline,'highExposureThresholdDays':cut,
                 'trainingSeasons':len(train),'trainingFirstYear':int(train.season_start_year.min()),'trainingLastYear':int(train.season_start_year.max()),
                 'alpha':alpha,'predictorValues':dict(zip(active_modes,indices.tolist())),
                 'modes':active_modes,'backtest':validation,'model':model,'validatedAlert':False})
+        for key,product_info in metadata['products'].items():
+            product=product_info['name']
+            canonical=training[(training['product']==product)&(training.season==season)&(training.lead_months==lead)]
+            first=canonical.iloc[0]
+            train=canonical[(canonical.habitat==first.habitat)&(canonical.region==first.region)&(pd.to_datetime(canonical.season_end)<issue)].sort_values('season_start_year').copy()
+            native_count=len(product_info['cells'])
+            years=np.array(product_info['years'])
+            year_positions=np.searchsorted(years,train.season_start_year.to_numpy())
+            values=np.fromfile(DATA/f'{key}_season_{season}.f32',dtype='<f4').reshape(len(years),native_count)
+            outcomes=values[year_positions]
+            assert np.isfinite(outcomes).all()
+            fitted=predict_all(train.season_start_year.to_numpy(float),train[active_modes].to_numpy(float),outcomes,target.year,indices,product)
+            origin_dates=pd.to_datetime(train.issue_date.iloc[12:])
+            after_baseline=(origin_dates>=pd.Timestamp('2023-02-01' if key=='mur' else '2012-02-01')).to_numpy()
+            def score(select):
+                y=fitted['observations'][select];p=fitted['predictions'][select];b=fitted['baselines'][select]
+                model_bs=np.mean((y-p)**2,axis=0);reference_bs=np.mean((y-b)**2,axis=0)
+                return model_bs,reference_bs,1-model_bs/np.maximum(reference_bs,1e-12),y.sum(axis=0)
+            bs,reference_bs,skill,n_high=score(after_baseline)
+            _,_,all_skill,_=score(np.ones(len(after_baseline),dtype=bool))
+            files={'probability':fitted['probability'],'baseline':fitted['baseline'],'threshold':fitted['threshold'],
+                   'alpha':fitted['alpha'],'skill':skill,'skill_all':all_skill,'brier':bs,'baseline_brier':reference_bs,
+                   'n_high':n_high,'coefficients':fitted['coefficients'],'backtest_predictions':fitted['predictions'],
+                   'backtest_observed':fitted['observations'],'backtest_baselines':fitted['baselines']}
+            for name,array in files.items():np.asarray(array,dtype='<f4').tofile(DATA/f'{key}_outlook_{name}.f32')
+            pixel_metadata[key]={'season':season,'seasonStart':str(target.date()),'seasonEnd':str((target+pd.DateOffset(months=3)-pd.Timedelta(days=1)).date()),
+                'leadMonths':lead,'issueDate':str(issue.date()),'modes':active_modes,'nativeCells':native_count,
+                'trainingYears':train.season_start_year.astype(int).tolist(),'testYears':fitted['testYears'].astype(int).tolist(),
+                'postBaselineMask':after_baseline.tolist(),'nTest':int(after_baseline.sum()),'nTestRetrospective':len(after_baseline),
+                'positiveSkillCells':int((skill>0).sum()),'medianSkill':float(np.median(skill)),
+                'model':'Individual source-cell outcomes, thresholds, ridge coefficients and nested chronological regularisation',
+                'backtestScope':'post_baseline_availability','validatedAlert':False}
+            # Independent pooled outcomes for each whole habitat, not an average
+            # of either regional or pixel prediction probabilities.
+            pooled=seasonal_groups['products'][key]
+            for group_index,group in enumerate(seasonal_groups['groups']):
+                if group['scope']!='overall':continue
+                overall=train.copy()
+                overall['observed_mhw_days']=np.array(pooled['seasons'][season],dtype=float)[year_positions,group_index]
+                cache={};validation=backtest(overall,active_modes,product,cache)
+                alpha=best_alpha(overall,active_modes,cache)
+                probability,model=fit_probability(overall,target.year,indices,alpha,active_modes)
+                cut=cutoff(overall)
+                template=next(t for t in targets if t.get('product')==product and t.get('available'))
+                targets.append({**template,**group,'probability':probability,'highExposureThresholdDays':cut,
+                    'historicalProbability':float(((overall.observed_mhw_days>cut).sum()+.5)/(len(overall)+1)),
+                    'alpha':alpha,'backtest':validation,'model':model})
     outlook={'asOf':str(now.date()),'updatedUtc':datetime.now(timezone.utc).isoformat(),
              'mhwHistoryThrough':'2025-12','model':'Fixed six-index ridge logistic regression; same transformations and training rules as the manuscript indices-only model, with its own backtest',
              'highExposureDefinition':'Seasonal habitat-cell mean MHW days above the training same-season 80th percentile, with a 10-day floor',
-             'targets':targets,'sources':live['sources'],'commonLastMonth':str(common_last)}
+             'targets':targets,'pixelOutlooks':pixel_metadata,'sources':live['sources'],'commonLastMonth':str(common_last)}
     # Write only after all downloads, parsing and forecasts complete successfully.
     write_json('climate_latest.json',live)
     write_json('outlook.json',outlook)

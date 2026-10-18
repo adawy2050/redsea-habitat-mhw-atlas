@@ -10,7 +10,8 @@ outlook=json.loads((DATA/'outlook.json').read_text())
 live=json.loads((DATA/'climate_latest.json').read_text())
 training=pd.read_csv(DATA/'seasonal_training.csv')
 targets=[t for t in outlook['targets'] if t['available']]
-assert len(targets)==18
+assert len(targets)==24
+groups=json.loads((DATA/'seasonal_groups.json').read_text())
 for target in targets:
     assert target['leadMonths'] in (1,2,3)
     assert target['modes']==['Nino34','NAO','AO','EAWR','NAtl_SSTA','PDO']
@@ -19,8 +20,13 @@ for target in targets:
     assert target['predictorLastMonth']==str(issue.to_period('M')-2)
     assert pd.Timestamp(target['seasonStart'])==issue+pd.DateOffset(months=target['leadMonths'])
     train=training[(training['product']==target['product'])&(training.habitat==target['habitat'])&
-        (training.region==target['region'])&(training.season==target['season'])&
+        ((training.region==target['region']) if target['scope']=='ecoregion' else (training.region=='Gulf of Aden'))&(training.season==target['season'])&
         (training.lead_months==target['leadMonths'])&(pd.to_datetime(training.season_end)<issue)]
+    if target['scope']=='overall':
+        train=train.copy();key='mur' if target['product']=='GHRSST MUR' else 'oisst'
+        j=next(i for i,g in enumerate(groups['groups']) if g['scope']=='overall' and g['habitat']==target['habitat'])
+        positions=np.searchsorted(groups['products'][key]['years'],train.season_start_year.to_numpy())
+        train['observed_mhw_days']=np.array(groups['products'][key]['seasons'][target['season']],float)[positions,j]
     cut=max(10.,float(np.quantile(train.observed_mhw_days,.8)))
     assert abs(cut-target['highExposureThresholdDays'])<1e-10
     assert len(train)==target['trainingSeasons']
@@ -41,4 +47,4 @@ for target in targets:
         skill=1-np.mean((y-p)**2)/np.mean((y-b)**2)
         assert abs(skill-score['skill'])<1e-12
     assert not target['validatedAlert']
-print('PASS: 18 probabilities reproduced from model parameters; feed dates, training-only cutoffs, leads and both chronological backtest scores verified.')
+print('PASS: 24 whole-habitat/ecoregion probabilities reproduced; feed dates, training-only cutoffs, leads and chronological backtests verified.')

@@ -10,6 +10,7 @@ meta = json.loads((data / 'metadata.json').read_text())
 pixels = json.loads((data / 'pixels.json').read_text())['rows']
 validation = json.loads((data / 'validation.json').read_text())
 manifest = json.loads((data / 'manifest.json').read_text())
+outlook = json.loads((data / 'outlook.json').read_text())
 assert len(pixels) == meta['pixels'] == 49408
 assert len({(p[0],p[1]) for p in pixels}) == len(pixels)
 assert all(0 < p[2] <= 7 and p[3] in (0,1,2) for p in pixels)
@@ -25,12 +26,35 @@ for key, product in meta['products'].items():
         assert not np.isinf(a).any()
         if metric in ('mhw_days','mhw_frequency','mhw_cumulative_intensity'):
             assert np.isfinite(a).all() and (a >= 0).all()
+    for season in ('MAM','JJA','SON','DJF'):
+        a = np.fromfile(data / f'{key}_season_{season}.f32', dtype='<f4').reshape(len(product['years']), n)
+        complete = a[:-1] if season == 'DJF' else a
+        assert np.isfinite(complete).all() and (complete >= 0).all() and (complete <= 92).all()
+        if season == 'DJF':
+            assert np.isnan(a[-1]).all()
+    forecast = outlook.get('pixelOutlooks', {}).get(key)
+    if forecast:
+        assert forecast['nativeCells'] == n
+        assert forecast['nTest'] == sum(forecast['postBaselineMask'])
+        assert forecast['nTestRetrospective'] == len(forecast['testYears'])
+        for name in ('probability','baseline','threshold','alpha','skill','skill_all','brier','baseline_brier','n_high'):
+            a = np.fromfile(data / f'{key}_outlook_{name}.f32', dtype='<f4')
+            assert a.shape == (n,) and np.isfinite(a).all(), (key,name)
+            if name in ('probability','baseline'):
+                assert ((a >= 0) & (a <= 1)).all()
+        assert np.fromfile(data / f'{key}_outlook_coefficients.f32', dtype='<f4').size == n * 7
+        for name in ('predictions','observed','baselines'):
+            a = np.fromfile(data / f'{key}_outlook_backtest_{name}.f32', dtype='<f4')
+            assert a.size == len(forecast['testYears']) * n
+            assert np.isfinite(a).all() and ((a >= 0) & (a <= 1)).all()
 for name, record in manifest['files'].items():
     p = root / name
     assert p.stat().st_size == record['bytes']
     assert hashlib.sha256(p.read_bytes()).hexdigest() == record['sha256']
 assert (root / 'vendor/leaflet.js').stat().st_size > 100000
 assert (root / 'vendor/plotly.min.js').stat().st_size > 1000000
+assert (root / 'vendor/jspdf.umd.min.js').stat().st_size > 300000
+assert (root / 'vendor/jspdf-autotable.min.js').stat().st_size > 20000
 coverage=json.loads((root/'coverage/index.json').read_text())
 coverage_count=0
 for habitat,keys in coverage['tiles'].items():
@@ -43,3 +67,4 @@ for habitat,keys in coverage['tiles'].items():
 assert coverage_count==5864
 print(f"PASS: {len(pixels):,} unique habitat cells; 108 summary checks; native-array dimensions, missing values, indices and asset checksums.")
 print(f'PASS: {coverage_count:,} rendered habitat coverage tiles match the map index.')
+print('PASS: native seasonal histories, current pixel probabilities, coefficients and chronological backtest arrays.')
