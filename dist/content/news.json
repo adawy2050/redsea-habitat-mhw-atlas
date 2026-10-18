@@ -61,6 +61,28 @@
       "summary": "Research on producing heatwave forecasts from existing climate forecast systems.",
       "summaryAr": "بحث عن إنتاج توقعات الموجات الحارة باستخدام نظم التنبؤ المناخي القائمة.",
       "url": "https://psl.noaa.gov/news/2022/042122b.html"
+    },
+    {
+      "id": "jamstec-eastasia-heat-2023",
+      "date": "2025-09-03",
+      "source": "JAMSTEC",
+      "title": "How warm seas strengthened East Asia’s 2023 summer heat",
+      "titleAr": "كيف زادت البحار الدافئة حرارة صيف شرق آسيا عام 2023",
+      "summary": "Regional simulations link the marine heatwave to warmer, more humid conditions over East Asia.",
+      "summaryAr": "تربط محاكاة إقليمية الموجة البحرية بزيادة الحرارة والرطوبة فوق شرق آسيا.",
+      "url": "https://www.jamstec.go.jp/j/about/press_release/20250903/",
+      "checked": "2026-10-18"
+    },
+    {
+      "id": "jamstec-kuroshio-rain",
+      "date": "2025-02-25",
+      "source": "JAMSTEC",
+      "title": "Kuroshio Extension heatwave linked to heavy rain in Japan",
+      "titleAr": "ارتباط موجة حارة في امتداد كوروشيو بأمطار غزيرة في اليابان",
+      "summary": "The study examines how warm water east of Japan contributed to heavy rain in Chiba in September 2023.",
+      "summaryAr": "تبحث الدراسة دور المياه الدافئة شرق اليابان في أمطار تشيبا الغزيرة في سبتمبر 2023.",
+      "url": "https://www.jamstec.go.jp/j/about/press_release/20250225/",
+      "checked": "2026-10-18"
     }
   ]
 }

@@ -1,6 +1,6 @@
 /* Curated, editable source catalogues; pagination is ten papers at a time. */
 (() => {
-  const $=id=>document.getElementById(id),T=s=>AtlasLanguage.current==='ar'?AtlasLanguage.translate(s):s;
+  const $=id=>document.getElementById(id),T=s=>AtlasLanguage.current!=='en'?AtlasLanguage.translate(s):s;
   let papers,news,pp=0,np=0,paperTimer,newsTimer;
   function link(url,text){const a=document.createElement('a');a.href=url;a.textContent=text;a.target='_blank';a.rel='noopener';return a;}
   function renderPapers(){if(!papers)return;const rows=papers.items.filter(p=>$('paperTopic').value==='all'||p.topic===$('paperTopic').value),pages=Math.max(1,Math.ceil(rows.length/10));pp=(pp+pages)%pages;

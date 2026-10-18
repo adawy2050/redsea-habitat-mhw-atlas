@@ -9,7 +9,8 @@ BASE=ROOT/'_cache/redsea_atlas_base';GULF=ROOT/'_cache/gulf_extracted'
 meta=json.loads((DATA/'metadata.json').read_text());old=json.loads((BASE/'metadata.json').read_text())
 points=np.array(json.loads((DATA/'pixels.json').read_text())['rows'])
 local=json.loads((GULF/'pixels.json').read_text())['rows']
-assert meta['pixels']==65348 and meta['habitatRecords']==74402
+assert meta['pixels']>=65348 and meta['habitatRecords']>=74402
+assert sum(b['pixels'] for b in meta['basins'] if b['id'] in ['redsea','gulf'])==65348
 assert len({(p[0],p[1]) for p in points})==len(points)
 outlook=json.loads((DATA/'outlook.json').read_text())
 checked=0

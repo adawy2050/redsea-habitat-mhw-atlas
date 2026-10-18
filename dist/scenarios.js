@@ -1,6 +1,6 @@
 /* Conditional annual extensions: original fits and observations remain unchanged. */
 (() => {
-  const $=id=>document.getElementById(id),T=s=>AtlasLanguage.current==='ar'?AtlasLanguage.translate(s):s;
+  const $=id=>document.getElementById(id),T=s=>AtlasLanguage.current!=='en'?AtlasLanguage.translate(s):s;
   let current=[],ticket=0;
   const controls=document.createElement('div');controls.className='scenario-controls';controls.innerHTML='<label><input id="showScenario" type="checkbox" checked>2026–2027 conditional curves</label><button id="scenarioCsv" class="text-button">Scenario data CSV</button><p id="scenarioNote"></p>';$('modelPlot').after(controls);
   function compute(){const d=AtlasUI.snapshot(),fit=d.model;if(!fit||fit.pixel!==d.state.pixel||fit.product!==d.state.product||fit.metric!==d.state.metric)return [];const latestYear=+d.liveClimate.monthly.dates.at(-1).slice(0,4),meanY=AtlasStats.mean(fit.rows.map(r=>r.observed)),reference=fit.rows.at(-1).reference;

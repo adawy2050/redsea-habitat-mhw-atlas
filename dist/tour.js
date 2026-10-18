@@ -6,6 +6,10 @@
     {title:'Gulf of Aden',ar:'خليج عدن',lat:12.6,lon:45,basin:'redsea',section:'history'},
     {title:'Arabian Gulf',ar:'الخليج العربي',lat:25.3,lon:54.5,basin:'gulf',section:'connections'},
     {title:'Gulf of Oman',ar:'خليج عُمان',lat:25.3,lon:57,basin:'gulf',section:'climate'},
+    {title:'Okinawa reefs',ar:'شعاب أوكيناوا',lat:26.2,lon:127.3,basin:'eastasia',section:'history'},
+    {title:'Northern Japan seagrass and kelp',ar:'الأعشاب والطحالب في شمال اليابان',lat:43,lon:144,basin:'eastasia',section:'history'},
+    {title:'Philippine habitats',ar:'موائل الفلبين',lat:10.3,lon:119.2,basin:'eastasia',section:'climate'},
+    {title:'Western Pacific islands',ar:'جزر غرب المحيط الهادئ',lat:7.5,lon:134.5,basin:'eastasia',section:'connections'},
     {title:'Next-season probability',ar:'احتمال الموسم القادم',lat:25.3,lon:57,basin:'gulf',section:'outlook',forecast:true}
   ];
   let index=0,running=false,busy=false;

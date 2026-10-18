@@ -9,8 +9,8 @@ from pathlib import Path
 import re
 
 ROOT=Path(__file__).resolve().parents[1]/'dist'
-SCRIPTS=['i18n.js','ui-strings.js','gallery.js','stats.js','app.js','point-report.js','tour.js','detail.js','exploration.js','scenarios.js','organisation.js','resources.js','identity.js']
-STYLES=['styles.css','atlas.css','point.css','portal.css','upgrade.css']
+SCRIPTS=['i18n.js','ui-strings.js','gallery.js','stats.js','app.js','point-report.js','tour.js','detail.js','exploration.js','scenarios.js','organisation.js','resources.js','identity.js','world.js','scientific.js']
+STYLES=['styles.css','atlas.css','point.css','portal.css','upgrade.css','world.css','scientific.css']
 
 
 def main():
@@ -19,7 +19,7 @@ def main():
     css=re.sub(r'/\*.*?\*/','',css,flags=re.S)
     css=re.sub(r'\s+',' ',css).strip()
     (ROOT/'interface.css').write_text(css,encoding='utf8',newline='\n')
-    (ROOT/'language.js').write_text('\n;\n'.join((ROOT/name).read_text(encoding='utf8') for name in SCRIPTS[:2]),encoding='utf8',newline='\n')
+    (ROOT/'language.js').write_text('\n;\n'.join((ROOT/name).read_text(encoding='utf8') for name in ['locales.js',*SCRIPTS[:2]]),encoding='utf8',newline='\n')
     js='\n;\n'.join((ROOT/name).read_text(encoding='utf8') for name in SCRIPTS[2:])
     (ROOT/'interface.js').write_text(js,encoding='utf8',newline='\n')
     records={}

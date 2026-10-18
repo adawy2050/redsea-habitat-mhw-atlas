@@ -2,7 +2,7 @@
 (() => {
   const $=id=>document.getElementById(id);
   const drawer=document.createElement('dialog');drawer.id='filtersDialog';drawer.className='side-drawer';drawer.setAttribute('aria-labelledby','filterTitle');drawer.innerHTML='<div class="dialog-heading"><h2 id="filterTitle">More filters</h2><button id="filtersClose" aria-label="Close filters"></button></div><div class="dialog-body"><div id="secondaryControls"></div></div>';document.body.append(drawer);
-  for(const id of ['basin','region','product'])$('secondaryControls').append($(id).closest('label'));
+  for(const id of ['region','product'])$('secondaryControls').append($(id).closest('label'));
   $('secondaryControls').append(document.querySelector('.layers-toolbar'));
   const open=document.createElement('button');open.type='button';open.id='filtersOpen';open.className='button outline';open.textContent='More filters';document.querySelector('.toolbar').append(open);open.onclick=()=>drawer.showModal();$('filtersClose').onclick=()=>drawer.close();drawer.onclick=e=>{if(e.target===drawer)drawer.close();};
   const methods=$('methodsDialog');methods.classList.add('side-drawer');methods.setAttribute('aria-label','Data and methods');

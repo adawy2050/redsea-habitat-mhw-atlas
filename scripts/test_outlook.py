@@ -19,7 +19,7 @@ for target in targets:
     issue=pd.Timestamp(target['issueDate'])
     assert target['predictorLastMonth']==str(issue.to_period('M')-2)
     assert pd.Timestamp(target['seasonStart'])==issue+pd.DateOffset(months=target['leadMonths'])
-    train=training[(training['product']==target['product'])&(training.habitat==target['habitat'])&
+    train=training[(training['product']==target['product'])&(training.habitat==(target['habitat'] if target['scope']=='ecoregion' else 'coral'))&
         ((training.region==target['region']) if target['scope']=='ecoregion' else (training.region=='Gulf of Aden'))&(training.season==target['season'])&
         (training.lead_months==target['leadMonths'])&(pd.to_datetime(training.season_end)<issue)]
     if target['scope']=='overall':

@@ -487,6 +487,109 @@
       "crossrefType": "journal-article",
       "titleAr": "الآثار العالمية للموجات الحارة البحرية على الأنواع المؤسسة للموائل الساحلية",
       "topic": "habitats"
+    },
+    {
+      "doi": "10.1016/j.rsma.2023.102934",
+      "title": "Characteristics of Marine Heatwaves in the Philippines",
+      "journal": "Regional Studies in Marine Science",
+      "year": 2023,
+      "authors": [
+        "Brisneve Edullantes",
+        "Brenna Mei M. Concolis",
+        "Raven Quilestino-Olario",
+        "Dale Patrick D. Atup",
+        "Aiza Cortes",
+        "Aletta T. Yñiguez"
+      ],
+      "url": "https://doi.org/10.1016/j.rsma.2023.102934",
+      "verified": "2026-10-18",
+      "crossrefType": "journal-article",
+      "titleAr": "خصائص الموجات الحارة البحرية في الفلبين",
+      "topic": "regional"
+    },
+    {
+      "doi": "10.1029/2021jc017792",
+      "title": "Variations in Summer Marine Heatwaves in the South China Sea",
+      "journal": "Journal of Geophysical Research: Oceans",
+      "year": 2021,
+      "authors": [
+        "Yulong Yao",
+        "Chunzai Wang"
+      ],
+      "url": "https://doi.org/10.1029/2021jc017792",
+      "verified": "2026-10-18",
+      "crossrefType": "journal-article",
+      "titleAr": "تباين الموجات الحارة البحرية الصيفية في بحر الصين الجنوبي",
+      "topic": "regional"
+    },
+    {
+      "doi": "10.1016/j.accre.2022.04.003",
+      "title": "Summer marine heatwaves in the South China Sea: Trend, variability and possible causes",
+      "journal": "Advances in Climate Change Research",
+      "year": 2022,
+      "authors": [
+        "Hong-Jian Tan",
+        "Rong-Shuo Cai",
+        "Ren-Guang Wu"
+      ],
+      "url": "https://doi.org/10.1016/j.accre.2022.04.003",
+      "verified": "2026-10-18",
+      "crossrefType": "journal-article",
+      "titleAr": "الموجات الحارة الصيفية في بحر الصين الجنوبي: الاتجاه والتباين والأسباب المحتملة",
+      "topic": "regional"
+    },
+    {
+      "doi": "10.1038/s41598-024-65291-y",
+      "title": "Impact of an unprecedented marine heatwave on extremely hot summer over Northern Japan in 2023",
+      "journal": "Scientific Reports",
+      "year": 2024,
+      "authors": [
+        "Hirotaka Sato",
+        "Kazuto Takemura",
+        "Akira Ito",
+        "Takafumi Umeda",
+        "Shuhei Maeda",
+        "Youichi Tanimoto",
+        "Masami Nonaka",
+        "Hisashi Nakamura"
+      ],
+      "url": "https://doi.org/10.1038/s41598-024-65291-y",
+      "verified": "2026-10-18",
+      "crossrefType": "journal-article",
+      "titleAr": "أثر موجة حارة بحرية غير مسبوقة في صيف شمال اليابان شديد الحرارة عام 2023",
+      "topic": "regional"
+    },
+    {
+      "doi": "10.1029/2025jc023614",
+      "title": "Marine Heatwaves Have Increased in Frequency, Duration, and Depth Across Southeast Asia",
+      "journal": "Journal of Geophysical Research: Oceans",
+      "year": 2026,
+      "authors": [
+        "Venkata Sai Gulakaram",
+        "Dhrubajyoti Samanta",
+        "Benjamin P. Horton",
+        "Kyle Morgan"
+      ],
+      "url": "https://doi.org/10.1029/2025jc023614",
+      "verified": "2026-10-18",
+      "crossrefType": "journal-article",
+      "titleAr": "ازدياد تكرار الموجات الحارة البحرية ومدتها وعمقها في جنوب شرق آسيا",
+      "topic": "regional"
+    },
+    {
+      "doi": "10.3390/rs13193989",
+      "title": "Extensive Marine Heatwaves at the Sea Surface in the Northwestern Pacific Ocean in Summer 2021",
+      "journal": "Remote Sensing",
+      "year": 2021,
+      "authors": [
+        "Hiroshi Kuroda",
+        "Takashi Setou"
+      ],
+      "url": "https://doi.org/10.3390/rs13193989",
+      "verified": "2026-10-18",
+      "crossrefType": "journal-article",
+      "titleAr": "موجات حارة بحرية واسعة في شمال غرب المحيط الهادئ صيف 2021",
+      "topic": "regional"
     }
   ]
 }

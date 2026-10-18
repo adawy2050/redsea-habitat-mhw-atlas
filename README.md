@@ -1,12 +1,12 @@
-# Red Sea & Arabian Gulf Habitat Heatwave Atlas
+# Coastal Habitat Heatwave Atlas
 
-A static, interactive atlas of **65,348 habitat grid cells**: 49,408 in the Red Sea and Gulf of Aden, and 15,940 in the Arabian Gulf and Gulf of Oman. It uses the two independent study pipelines, with unique habitat-cell sampling and valid marine SST attachments. Original Red Sea annual histories and pixel forecasts are preserved unchanged.
+A static atlas of **210,680 habitat cells** across the Red Sea, Arabian Gulf, East Asia and western Pacific. It includes coral, seagrass, mangrove and kelp/macroalgae footprints, annual and monthly marine heatwave histories, native daily OISST temperature, climate indices and separately backtested seasonal probabilities.
 
 **Website:** https://adawy2050.github.io/redsea-habitat-mhw-atlas/
 
 ## Explore
 
-- Select both study areas, the Red Sea, or the Arabian Gulf; filter their MEOW ecoregions.
+- Start with a map rectangle or select any of the three study areas and their MEOW ecoregions.
 - Animate annual habitat-cell maps for six marine heatwave metrics.
 - Distinguish solid observed series from dotted annual model fits; toggle fitted linear trends in history and climate charts.
 - Switch between satellite imagery and a coastline basemap; show separate coral, seagrass and mangrove coverage maps.
@@ -53,7 +53,7 @@ See [DATA_METHODS.md](DATA_METHODS.md). Browser data are in `dist/data/`. `metad
 
 `validation.json` records the 108 Red Sea annual-summary checks. `gulf_validation.json` records Gulf source-summary comparisons, duplicate-row checks, marine attachment, native seasonal/annual consistency and source completeness. `scripts/test_multibasin.py` also compares matching Gulf source values and checks that Red Sea annual histories, pixel coefficients, backtests and probabilities remain unchanged. `manifest.json` includes asset checksums and hashes of the corrected habitat attachment and climate inputs.
 
-Each pixel forecast is fitted to its own source-cell seasonal MHW history, threshold and training-only choice of regularisation. Habitat-wide and regional forecasts instead use their corresponding mean exposure histories. Whole-habitat forecasts are fitted separately for each basin; choosing both study areas shows both sets. Repeated habitat attachments to one SST cell share that cell's forecast. Pixel skill is tested independently; finer spatial support does not guarantee higher skill.
+Each pixel forecast is fitted to its own source-cell seasonal MHW history, threshold and training-only choice of regularisation. Habitat-wide and regional forecasts instead use their corresponding mean exposure histories. Whole-habitat forecasts are fitted separately for each basin; choosing all study areas shows each set. Repeated habitat attachments to one SST cell share that cell's forecast. Pixel skill is tested independently; finer spatial support does not guarantee higher skill.
 
 The selected-cell multivariate model is calculated by `dist/stats.js`. It is a full-record statistical fit, separate from the manuscript's chronological seasonal warning analysis. Model output changes when the selected pixel, outcome, years, reference or lead changes. The paired detrending switch affects only the paired plot.
 
@@ -83,7 +83,7 @@ The photo collection includes Red Sea reefs, seagrass and Farasan mangroves; Ara
 
 ## Editing the research and news sections
 
-`dist/content/papers.json` contains 20 published-paper entries, paged ten at a time. Each entry has a DOI, publisher title, Arabic title, journal, year and topic (`regional`, `habitats`, `methods`, `forecast`). `dist/content/news.json` contains dated source links with reviewed English/Arabic titles and short summaries. Add or edit entries using the existing structure. No API key or runtime third-party photo embed is needed.
+`dist/content/papers.json` contains 26 published-paper entries, paged ten at a time. Each entry has a DOI, publisher title, Arabic title, journal, year and topic (`regional`, `habitats`, `methods`, `forecast`). `dist/content/news.json` contains dated source links with reviewed English/Arabic titles and short summaries. Add or edit entries using the existing structure. No API key or runtime third-party photo embed is needed.
 
 After editing source modules locally, run in PowerShell:
 
@@ -99,3 +99,22 @@ Commit and push changes to `main`; GitHub Pages assembles and publishes them. Th
 ## Interface upgrade
 
 See [UPGRADE_NOTES.md](UPGRADE_NOTES.md) for phases, measurements and verification. Editable source modules remain in `dist/`; `scripts/build_assets.py` assembles `language.js`, `interface.js` and `interface.css`. Original scientific files and `data/manifest.json` are preserved; `asset-manifest.json` covers presentation and dense-display assets separately. The browser uses the official self-hosted Plotly 2.35.2 Cartesian partial bundle with the existing Plotly licence. Daily SVG curves retain every observation. PDF libraries load on demand.
+
+
+## East Asia extension — 18 October 2026
+
+The independent export retains 145,332 of 150,773 study sites after valid marine MUR attachment within 5 km. It adds 22 ecoregions plus 15 cells outside the mapped ecoregions. Earlier Red Sea and Gulf numerical slices are preserved and checked by `test_eastasia.py`. Native quarterly and monthly records, daily OISST and habitat/region training outcomes are appended independently.
+
+The source `exceedance` field is an integer threshold flag, not temperature. East Asia temperature intensity is calculated from saved anomaly + climatology − p90 threshold on the saved event mask. Annual frequency follows the existing no-leap/year-boundary convention. Missing MUR dates (2021-02-20, 2021-02-21, 2022-11-09) remain absent.
+
+East Asia seagrass footprints include modelled top-percent suitability grids for Zostera marina, Z. japonica and Z. caespitosa; kelp/macroalgae footprints are occurrence based. Coverage, reports and methods retain this distinction.
+
+Interface labels are available in English, Arabic, simplified/traditional Chinese, Japanese, Korean, Filipino, Indonesian, Malay, Vietnamese, Russian and Persian. Scientific source titles retain their original wording; PDF reports use English. Photos use verified open licences and geographic coordinates or explicitly approximate named areas. The nearest photo is not presented as a photograph of the selected heatwave cell.
+
+The weekly GitHub workflow refreshes climate observations and refits seasonal models for all three study areas. Historical MHW arrays stay frozen through 2025. Future annual dotted lines are conditional on the stated climate inputs; seasonal probability lines describe the whole forecast season.
+
+## Scientific figures — 19 October 2026
+
+Upcoming-season probabilities are grouped into one figure per habitat. Each ecoregion has a persistent colour and line style across habitats; the legend can hide individual regions. Past chronological-test probabilities and the next whole-season probability are separate segments, without invented monthly forecasts. Figures and the native monthly calendar can be downloaded as SVG. Annual history has a selectable right axis; daily SST, monthly SST and monthly MHW days share a separate two-axis plot. Point summaries use compact text rather than large-number cards.
+
+Verification includes exact preservation of earlier basin arrays, 12,060 original East Asia annual-day comparisons, native seasonal model refits, daily SST/annual-mean agreement, monthly/annual MHW sums, 24 language/viewport combinations and a generated point PDF.

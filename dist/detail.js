@@ -1,6 +1,6 @@
 /* Observed daily/monthly display series are independent of annual model arrays. */
 (() => {
-  const $=id=>document.getElementById(id),cache=new Map(),T=s=>AtlasLanguage.current==='ar'?AtlasLanguage.translate(s):s;
+  const $=id=>document.getElementById(id),cache=new Map(),T=s=>AtlasLanguage.current!=='en'?AtlasLanguage.translate(s):s;
   const json=url=>{if(!cache.has(url))cache.set(url,fetch(url).then(r=>{if(!r.ok)throw Error(url);return r.json();}));return cache.get(url);};
   const binary=url=>{if(!cache.has(url))cache.set(url,fetch(url).then(r=>{if(!r.ok)throw Error(url);return r.arrayBuffer();}));return cache.get(url);};
   async function load(pixel,product){const d=AtlasUI.snapshot(),point=d.pixels[pixel],basin=d.meta.basins.find(b=>b.regions.includes(point[3])).id,oi=point[5]-d.meta.products.oisst.basinCellRanges[basin][0],source=point[product==='mur'?4:5];

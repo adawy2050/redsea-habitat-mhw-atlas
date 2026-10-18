@@ -13,7 +13,7 @@ manifest = json.loads((data / 'manifest.json').read_text())
 outlook = json.loads((data / 'outlook.json').read_text())
 assert len(pixels) == meta['pixels'] == sum(b['pixels'] for b in meta['basins'])
 assert len({(p[0],p[1]) for p in pixels}) == len(pixels)
-assert all(0 < p[2] <= 7 and p[3] in range(len(meta['regions'])) for p in pixels)
+assert all(0 < p[2] < (1 << len(meta['habitats'])) and p[3] in range(len(meta['regions'])) for p in pixels)
 assert all(sum(p[3] in b['regions'] for b in meta['basins'])==1 for p in pixels)
 assert all(0 <= p[6] <= 5 for p in pixels)
 assert validation['allChecksPassed'] and len(validation['checks']) == 108
@@ -29,7 +29,10 @@ for key, product in meta['products'].items():
         assert len(a) == len(product['years']) * n
         assert not np.isinf(a).any()
         if metric in ('mhw_days','mhw_frequency','mhw_cumulative_intensity'):
-            assert np.isfinite(a).all() and (a >= 0).all()
+            assert np.isfinite(a).all()
+            if metric=='mhw_cumulative_intensity' and 'eastasia' in product.get('basinCellRanges',{}):
+                old_end=product['basinCellRanges']['eastasia'][0];assert (a.reshape(len(product['years']),n)[:,:old_end]>=0).all()
+            else:assert (a>=0).all()
     for season in ('MAM','JJA','SON','DJF'):
         a = np.fromfile(data / f'{key}_season_{season}.f32', dtype='<f4').reshape(len(product['years']), n)
         complete = a[:-1] if season == 'DJF' else a

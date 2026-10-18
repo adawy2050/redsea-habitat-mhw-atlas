@@ -70,6 +70,14 @@
       doc.addImage(dense,'PNG',X,y,W,68);y+=74;y=para(`Daily observations: ${r.detail.period[0]} to ${r.detail.period[1]} (${daily.dates.length.toLocaleString('en')} dates). Figure shows the latest five years; all daily values can be downloaded from the atlas. Monthly MHW days use ${monthly.product} at the point's attached source cell.`,y,8);
       const last=monthly.dates.map((date,i)=>({date,i})).slice(-24);y=table(['Month','Observed mean SST (degC)','Observed MHW days'],last.map(d=>{const k=means.dates.indexOf(d.date);return [d.date.slice(0,7),num(means.values[k],2),num(monthly.values[d.i],0)];}),y,{styles:{fontSize:7,cellPadding:1.1}});
     }
+    if(r.detail){
+      doc.addPage();title('Heatwave calendar and next-season outlook',`${coordinate} | ${r.region} | ${r.product.name}`);y=40;
+      const monthly=r.detail.monthly,years=r.product.years,calendar=years.map(year=>Array.from({length:12},(_,m)=>{const key=`${year}-${String(m+1).padStart(2,'0')}`;const i=monthly.dates.findIndex(d=>d.startsWith(key));return i<0?null:monthly.values[i];}));
+      const heat=await extraChart([{x:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],y:years,z:calendar,type:'heatmap',colorscale:[[0,'#f3eee2'],[.5,'#4b737c'],[1,'#9f542e']],zmin:0,zmax:31,colorbar:{title:'Days',thickness:12}}],{xaxis:{type:'category',side:'top'},yaxis:{autorange:'reversed',tickformat:'d',dtick:years.length>30?4:2}});doc.addImage(heat,'PNG',X,y,W,85);y+=91;
+      const days=r.histories.mhw_days.filter(Number.isFinite),mean=v=>v.reduce((a,b)=>a+b,0)/v.length;
+      y=para(`Mean heatwave days per year: first five years ${num(mean(days.slice(0,5)),1)}; last five years ${num(mean(days.slice(-5)),1)}; difference ${num(mean(days.slice(-5))-mean(days.slice(0,5)),1)} days/year.`,y,9);
+      if(r.forecast){const f=r.forecast,tests=r.validation||[],plot=await extraChart([{x:tests.map(v=>`${v.year}-${f.seasonStart.slice(5)}`),y:tests.map(v=>v.probability*100),name:'Past model tests',mode:'lines',line:{color:'#245e88',width:2}},{x:[f.seasonStart,f.seasonEnd],y:[f.probability*100,f.probability*100],name:'Next season',mode:'lines',line:{color:'#a45d36',width:3,dash:'dot'}},{x:[tests.length?`${tests[0].year}-01-01`:f.seasonStart,f.seasonEnd],y:[f.baseline*100,f.baseline*100],name:'Historical chance',mode:'lines',line:{color:'#92947f',dash:'dot'}}],{xaxis:{type:'date'},yaxis:{title:'Probability (%)',range:[0,100]}});doc.addImage(plot,'PNG',X,y,W,65);y+=72;y=para(`The dotted future line covers ${f.seasonStart} to ${f.seasonEnd}. It is one probability for the whole season.`,y,8);}
+    }
     if(r.liveClimate){
       doc.addPage();title('Climate observations and conditional annual extension',`${coordinate} | Monthly feeds checked ${r.liveClimate.asOf}`);y=40;
       const monthly=r.liveClimate.monthly,start=String(+r.liveClimate.asOf.slice(0,4)-4),keep=monthly.dates.map((date,i)=>date>=start?i:-1).filter(i=>i>=0),colours=['#c43d32','#007d8a','#7e52a0','#366aa2','#99700d','#b52a74','#39813c'];
@@ -90,10 +98,10 @@
     }
     if(y>190){doc.addPage();title('Sources, methods and contacts',coordinate);y=42;}
     y=heading('Sources and interpretation',y);
-    y=para('SST: NASA/JPL GHRSST MUR v4.1 and NOAA OISST v2.1. Habitats: UNEP-WCMC study inventories. Climate: NOAA CPC, PSL and NCEI. The seasonal model uses Nino-3.4, NAO, AO, EAWR, North Atlantic SST anomaly and PDO. The IOD feed is delayed and is shown separately in the atlas.',y,8);
+    y=para('SST: NASA/JPL GHRSST MUR v4.1 and NOAA OISST v2.1. Habitats: UNEP-WCMC inventories; East Asia also uses modelled seagrass grids and macroalgae occurrence records. Climate: NOAA CPC, PSL and NCEI. The seasonal model uses Nino-3.4, NAO, AO, EAWR, North Atlantic SST anomaly and PDO. The IOD feed is delayed and is shown separately in the atlas.',y,8);
     y=para('High exposure exceeds the training same-season 80th percentile, with a 10-day floor. Every backtest refits using earlier seasons only, including thresholds, detrending, standardisation and regularisation. A source cell may be shared by several habitat locations. These results describe surface heatwave exposure, not species-specific damage.',y,8);
     y=heading('Contacts',y);y=para('Ahmed Eladawy, JAMSTEC: ahmed.eladawy@jamstec.go.jp',y,8);
-    const pages=doc.getNumberOfPages();for(let page=1;page<=pages;page++){doc.setPage(page);doc.setDrawColor(215,222,230);doc.line(X,282,195,282);doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(...grey);doc.text('Red Sea & Arabian Gulf Habitat Heatwave Atlas | Ahmed Eladawy',X,287);doc.text(`${page} / ${pages}`,195,287,{align:'right'});}
+    const pages=doc.getNumberOfPages();for(let page=1;page<=pages;page++){doc.setPage(page);doc.setDrawColor(215,222,230);doc.line(X,282,195,282);doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(...grey);doc.text('Coastal Habitat Heatwave Atlas | Ahmed Eladawy',X,287);doc.text(`${page} / ${pages}`,195,287,{align:'right'});}
     doc.setProperties({title:`MHW point report: ${coordinate}`,author:'Ahmed Eladawy',subject:'Habitat-cell history, seasonal probabilities and chronological validation'});
     doc.save(`MHW_${r.latitude.toFixed(2)}N_${r.longitude.toFixed(2)}E_${r.product.name.replaceAll(' ','_')}_report.pdf`);
     }finally{window.AtlasReportRendering=false;window.dispatchEvent(new Event('atlasreportcomplete'));}

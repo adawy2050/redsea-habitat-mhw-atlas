@@ -1,7 +1,7 @@
 /* Red Sea Habitat Heatwave Atlas. All scientific arrays are fetched locally. */
 (() => {
   'use strict';
-  const RELEASE='20261018-gulf';
+  const RELEASE='20261019-scientific-r3';
   const $ = id => document.getElementById(id), S = window.AtlasStats;
   const labels = {Nino34: 'Niño-3.4', IOD: 'IOD', NAO: 'NAO', AO: 'AO', EAWR: 'EAWR', NAtl_SSTA: 'N. Atlantic SST', PDO: 'PDO',localSst:'Annual SST (OISST)'};
   const modeColors = {Nino34:'#c43d32', IOD:'#007d8a', NAO:'#7e52a0', AO:'#366aa2', EAWR:'#99700d', NAtl_SSTA:'#b52a74', PDO:'#39813c',localSst:'#7c660d'};
@@ -9,11 +9,11 @@
     mhw_days: {name:'Heatwave days', unit:'days', axis:'Heatwave days / year', max:200, digits:0},
     mhw_frequency: {name:'Event frequency', unit:'events', axis:'Events / year', max:12, digits:1},
     mhw_mean_duration: {name:'Mean event duration', unit:'days', axis:'Mean duration (days)', max:40, digits:1},
-    mhw_mean_intensity: {name:'Mean intensity', unit:'°C', axis:'Mean intensity (°C above threshold)', max:1.5, digits:2},
-    mhw_max_intensity: {name:'Maximum intensity', unit:'°C', axis:'Maximum intensity (°C above threshold)', max:3, digits:2},
+    mhw_mean_intensity: {name:'Mean intensity', unit:'°C', axis:'Mean intensity (°C relative to threshold)', max:1.5, digits:2},
+    mhw_max_intensity: {name:'Maximum intensity', unit:'°C', axis:'Maximum intensity (°C relative to threshold)', max:3, digits:2},
     mhw_cumulative_intensity: {name:'Cumulative intensity', unit:'°C days', axis:'Cumulative intensity (°C days)', max:160, digits:1}
   };
-  const state = {product:'mur', metric:'mhw_days',mapMode:'history', year:2025, basin:'all',region:'all', habitats:7, pixel:0, pins:[], arrays:new Map(),showTrend:true,climateTrend:false,
+  const state = {product:'mur', metric:'mhw_days',mapMode:'history', year:2025, basin:'all',region:'all', habitats:15, selection:null,historySecondary:'mhw_frequency', pixel:0, pins:[], arrays:new Map(),showTrend:true,climateTrend:false,
     from:2003, to:2025, lag:0, benchmark:'trend', index:'Nino34', detrend:true, selectedModes:new Set(['Nino34','IOD','NAtl_SSTA','AO']),
     step:'monthly', scale:'standard', climateSource:'latest',climateFrom:null,climateTo:null,outlookRecord:'GHRSST MUR',outlookScope:'ecoregion',pixelOpacity:.7,showPixels:true,timer:null,generation:0};
   let meta, pixels, climate, map, pixelLayer, selectedMarker, sourceMarker, sourceLine, climateZ, mapLand,landLayer,satelliteLayer,coverageMeta,liveClimate,outlook;
@@ -29,7 +29,7 @@
     legend:{orientation:'h',x:0,y:1.15,font:{size:10}}, showlegend:true};
   function layout(extra={}) { return {...baseLayout,...extra,xaxis:{...baseLayout.xaxis,...extra.xaxis},yaxis:{...baseLayout.yaxis,...extra.yaxis}}; }
   function renderPlot(id,traces,chartLayout,options=config){
-    const localize=(value,key)=>{if(typeof value==='string')return ['name','text','title'].includes(key)&&window.AtlasLanguage?.current==='ar'?window.AtlasLanguage.translate(value):value;if(Array.isArray(value))return value.map(v=>localize(v,key));if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).map(([k,v])=>[k,localize(v,k)]));return value;};
+    const localize=(value,key)=>{if(typeof value==='string')return ['name','text','title'].includes(key)&&window.AtlasLanguage?.current!=='en'?window.AtlasLanguage.translate(value):value;if(Array.isArray(value))return value.map(v=>localize(v,key));if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).map(([k,v])=>[k,localize(v,k)]));return value;};
     return Plotly.react(id,localize(traces,''),localize(chartLayout,''),options);
   }
   function note(message) { $('toast').textContent=message; $('toast').hidden=false; clearTimeout(note.timer); note.timer=setTimeout(()=>{$('toast').hidden=true;},4000); }
@@ -62,10 +62,10 @@
   function signed(v,digits=1) {return S.finite(v)?`${v>=0?'+':''}${number(v,digits)}`:'—';}
   function coordinate(i) {const p=pixels[i];return `${p[1].toFixed(2)}°N, ${p[0].toFixed(2)}°E`;}
   function pointBasin(point){return meta.basins.find(b=>b.regions.includes(point[3]));}
-  function pixelId(i) {return `${pointBasin(pixels[i]).id==='gulf'?'gulf_':''}ghrsst_${String(pixels[i][8]).padStart(5,'0')}_${String(pixels[i][9]).padStart(5,'0')}`;}
-  function visible(p) {return (p[2]&state.habitats)!==0&&(state.region==='all'||p[3]===Number(state.region))&&(state.basin==='all'||pointBasin(p).id===state.basin);}
+  function pixelId(i) {return `${pointBasin(pixels[i]).id==='redsea'?'':pointBasin(pixels[i]).id+'_'}ghrsst_${String(pixels[i][8]).padStart(5,'0')}_${String(pixels[i][9]).padStart(5,'0')}`;}
+  function visible(p) {return (!state.selection||(p[0]>=state.selection[0]&&p[0]<=state.selection[2]&&p[1]>=state.selection[1]&&p[1]<=state.selection[3]))&&(p[2]&state.habitats)!==0&&(state.region==='all'||p[3]===Number(state.region))&&(state.basin==='all'||pointBasin(p).id===state.basin);}
   function regionControls(){const options=[new Option('All ecoregions','all')];meta.regions.forEach((name,index)=>{if(state.basin==='all'||meta.basins.find(b=>b.id===state.basin).regions.includes(index))options.push(new Option(name,index));});$('region').replaceChildren(...options);$('region').value=state.region;$('totalPixels').textContent=(state.basin==='all'?meta.pixels:meta.basins.find(b=>b.id===state.basin).pixels).toLocaleString('en-GB');}
-  function fitStudy(){map.fitBounds(state.basin==='all'?meta.bounds:meta.basins.find(b=>b.id===state.basin).bounds,{padding:[55,45]});}
+  function fitStudy(){map.fitBounds(state.selection?[[state.selection[1],state.selection[0]],[state.selection[3],state.selection[2]]]:(state.basin==='all'?meta.bounds:meta.basins.find(b=>b.id===state.basin).bounds),{padding:[55,45]});}
   function color(v, max) {
     if(!S.finite(v))return '#6b8583';
     const stops=[[0,34,78],[0,46,106],[26,56,111],[50,67,109],[67,78,108],[83,90,109],[97,101,111],[111,112,115],[125,124,120],[140,136,120],[155,148,118],[171,160,114],[188,174,108],[205,187,99],[222,201,88],[240,216,70],[254,232,56]];
@@ -89,7 +89,7 @@
     satelliteLayer=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,detectRetina:true,crossOrigin:true,attribution:'Imagery © Esri, Vantor, Earthstar Geographics, GIS User Community'}).addTo(map);
     map.createPane('habitatCoverage');map.getPane('habitatCoverage').style.zIndex=390;map.getPane('habitatCoverage').style.pointerEvents='none';
     const empty='data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
-    for(const habitat of meta.habitats){const keys=new Set(coverageMeta.tiles[habitat]);const Coverage=L.TileLayer.extend({getTileUrl(coords){const key=`${coords.z}/${coords.x}/${coords.y}`;return keys.has(key)?new URL(`./coverage/${habitat}/${key}.png?v=${RELEASE}`,document.baseURI).href:empty;}});coverageLayers[habitat]=new Coverage('',{pane:'habitatCoverage',minZoom:4,maxNativeZoom:12,maxZoom:16,opacity:.95,crossOrigin:true,errorTileUrl:empty}).addTo(map);}
+    for(const habitat of meta.habitats){const keys=new Set(coverageMeta.tiles[habitat]||[]);const Coverage=L.TileLayer.extend({getTileUrl(coords){const key=`${coords.z}/${coords.x}/${coords.y}`;return keys.has(key)?new URL(`./coverage/${habitat}/${key}.png?v=${RELEASE}`,document.baseURI).href:empty;}});coverageLayers[habitat]=new Coverage('',{pane:'habitatCoverage',minZoom:4,maxNativeZoom:12,maxZoom:16,opacity:.95,crossOrigin:true,errorTileUrl:empty}).addTo(map);}
     for(const [name,lat,lon,kind] of [['EGYPT',27.7,30.3,'country'],['SAUDI ARABIA',25.7,43.5,'country'],['SUDAN',20.8,33.5,'country'],['ERITREA',15.7,37.4,'country'],['YEMEN',15.8,47,'country'],['SOMALIA',9.6,47.5,'country'],['Red Sea',22.7,38.9,'sea'],['Gulf of Aden',12.5,47.8,'sea']]) {
       L.tooltip({permanent:true,direction:'center',className:`country-label ${kind==='sea'?'sea-label':''}`,interactive:false}).setLatLng([lat,lon]).setContent(name).addTo(map);
     }
@@ -164,7 +164,7 @@
     const p=pixels[index],native=meta.products[product],source=native.cells[sourceIndex(index)],values=series(index,a),ok=values.filter(S.finite),info=metricInfo[metric];
     selectedMarker.setLatLng([p[1],p[0]]);sourceMarker.setLatLng([source[1],source[0]]);sourceLine.setLatLngs([[p[1],p[0]],[source[1],source[0]]]);
     $('pixelTitle').textContent=coordinate(index);$('pixelRegion').textContent=meta.regions[p[3]];
-    $('pixelHabitats').replaceChildren(...meta.habitats.filter((_,i)=>p[2]&(1<<i)).map(h=>{const e=document.createElement('span');e.className=`habitat-badge ${h}`;e.textContent=h;return e;}));
+    $('pixelHabitats').replaceChildren(...meta.habitats.filter((_,i)=>p[2]&(1<<i)).map(h=>{const e=document.createElement('span');e.className=`habitat-badge ${h}`;e.textContent=h==='kelp_macroalgae'?'Kelp & seaweeds':h;return e;}));
     updatePixelValue();const statLabels=document.querySelectorAll('.mini-stats>div>span');
     if(state.mapMode==='history'){['Record mean','Change / decade','Highest year'].forEach((text,j)=>statLabels[j].textContent=text);$('recordMean').textContent=ok.length?number(S.mean(ok),info.digits):'—';
     $('pixelTrend').textContent=signed(S.trend(native.years,values),info.digits===0?1:info.digits);
@@ -173,7 +173,7 @@
     $('sourceCell').textContent=`${source[1].toFixed(product==='mur'?2:3)}°N, ${source[0].toFixed(product==='mur'?2:3)}°E · ${native.name}`;
     $('attachmentNote').textContent=`${number(p[product==='mur'?6:7],2)} km from habitat centre. ${product==='oisst'?'A shared 0.25° SST cell.':'Nearest valid 0.01° marine cell.'}`;
     Plotly.react('sparkline',[{x:native.years,y:values,type:'scatter',mode:'lines',line:{color:'#1768ac',width:1.5},fill:'tozeroy',fillcolor:'#d9e8f580',hovertemplate:'%{x}: %{y:.2f}<extra></extra>'}],{margin:{l:0,r:0,t:5,b:0},paper_bgcolor:'transparent',plot_bgcolor:'transparent',showlegend:false,xaxis:{visible:false},yaxis:{visible:false},font:{size:9}},{displayModeBar:false,responsive:true});
-    window.dispatchEvent(new CustomEvent('atlaspixelchange',{detail:{basin:pointBasin(p).id,habitats:p[2]}}));await Promise.all([renderHistory(),renderModel(),renderPointOutlook()]);if(state.outlookScope==='pixel')renderOutlook();
+    window.dispatchEvent(new CustomEvent('atlaspixelchange',{detail:{basin:pointBasin(p).id,habitats:p[2],latitude:p[1],longitude:p[0],pixel:index}}));await Promise.all([renderHistory(),renderModel(),renderPointOutlook()]);if(state.outlookScope==='pixel')renderOutlook();
   }
   async function renderHistory() {
     const product=state.product,metric=state.metric,a=await array(product,metric);if(product!==state.product||metric!==state.metric)return;
@@ -183,7 +183,9 @@
       return {x:years,y:v,type:'scatter',mode:'lines+markers',name:coordinate(index),line:{color:j===0?'#1768ac':pinColors[(j-1)%pinColors.length],width:j===0?2.5:1.6},marker:{size:4},connectgaps:false,hovertemplate:`%{y:.2f} ${metricInfo[metric].unit}<extra>${coordinate(index)}</extra>`};
     });
     if(state.showTrend){const selected=traces[0],valid=selected.y.map((v,i)=>S.finite(v)?i:-1).filter(i=>i>=0);if(valid.length>=3){const years=valid.map(i=>selected.x[i]),fit=S.fit(valid.map(i=>selected.y[i]),[years]);traces.push({x:years,y:fit.pred,type:'scatter',mode:'lines',name:'Selected cell · fitted trend',line:{color:'#253444',width:2,dash:'dot'},hovertemplate:'%{y:.2f}<extra>Fitted linear trend</extra>'});years.forEach((year,k)=>currentHistory.push({pixel:pixelId(state.pixel),latitude:pixels[state.pixel][1],longitude:pixels[state.pixel][0],product:p.name,year,metric,value:fit.pred[k],series:'fitted_linear_trend'}));}}
-    renderPlot('historyPlot',traces,layout({yaxis:{title:metricInfo[metric].axis},xaxis:{dtick:Math.max(1,Math.round((state.to-state.from)/9))},shapes:[{type:'line',xref:'x',x0:state.year,x1:state.year,yref:'paper',y0:0,y1:1,line:{color:'#a6b3a0',width:1,dash:'dot'}}]}),config);
+    const second=state.historySecondary;
+    if(second&&second!==metric){const key=second==='localSst'?'oisst':product,secondary=await array(key,second==='localSst'?'sst':second);if(product!==state.product||metric!==state.metric)return;const yy=meta.products[key].years,vv=series(state.pixel,secondary,key),keep=yy.map((y,i)=>inYears(y)?i:-1).filter(i=>i>=0),name=second==='localSst'?'Annual SST (OISST)':metricInfo[second].name;traces.push({x:keep.map(i=>yy[i]),y:keep.map(i=>vv[i]),name,type:'scatter',mode:'lines',yaxis:'y2',line:{color:'#7a6253',width:1.4,dash:'dash'},hovertemplate:'%{y:.2f}<extra>'+name+'</extra>'});keep.forEach(i=>currentHistory.push({pixel:pixelId(state.pixel),latitude:pixels[state.pixel][1],longitude:pixels[state.pixel][0],product:meta.products[key].name,year:yy[i],metric:second,value:vv[i],series:'observed_secondary_axis'}));}
+    renderPlot('historyPlot',traces,layout({margin:{l:65,r:70,t:45,b:48},yaxis:{title:metricInfo[metric].axis},yaxis2:{title:second&&second!==metric?(second==='localSst'?'SST (°C)':metricInfo[second].axis):'',overlaying:'y',side:'right',showgrid:false,zeroline:false,rangemode:second==='localSst'?'normal':'tozero',visible:!!second&&second!==metric},xaxis:{dtick:Math.max(1,Math.round((state.to-state.from)/9))},shapes:[{type:'line',xref:'x',x0:state.year,x1:state.year,yref:'paper',y0:0,y1:1,line:{color:'#a6b3a0',width:1,dash:'dot'}}]}),config);
     $('historyCaption').textContent=`${p.name} · ${state.from}–${state.to} · baseline ${p.baseline} · ${metricInfo[metric].unit}`;
     $('pins').replaceChildren(...state.pins.map((index,j)=>{const e=document.createElement('span');e.className='pin';const dot=document.createElement('i');dot.className='pin-dot';dot.style.background=pinColors[j%pinColors.length];const b=document.createElement('button');b.textContent='×';b.setAttribute('aria-label',`Remove ${coordinate(index)}`);b.onclick=()=>{state.pins=state.pins.filter(i=>i!==index);renderHistory();};e.append(dot,document.createTextNode(coordinate(index)),b);return e;}));
   }
@@ -270,20 +272,8 @@
     $('outlookDates').replaceChildren(...[`Issue month: ${monthLabel(first.issueDate.slice(0,7))}`,`Indices used: ${monthLabel(first.predictorFirstMonth)}–${monthLabel(first.predictorLastMonth)}`,`Updated ${outlook.asOf}`,`MHW history: through 2025`].map(text=>{const e=document.createElement('span');e.textContent=text;return e;}));
     $('outlookDefinition').textContent=`Probability of a high-exposure season: ${state.outlookScope==='pixel'?'MHW days at this source cell':'habitat-cell mean MHW days'} above the training same-season 80th percentile, with a 10-day floor. Fixed six-index model; the delayed IOD feed is displayed separately.`;
     const rows=state.outlookScope==='pixel'?[await pointForecast(state.outlookRecord==='GHRSST MUR'?'mur':'oisst',state.pixel)]:all.filter(t=>t.product===state.outlookRecord&&t.scope===state.outlookScope&&(state.basin==='all'||t.basin===state.basin)&&(state.outlookScope==='overall'||state.region==='all'||t.region===meta.regions[Number(state.region)])&&(state.habitats&(1<<meta.habitats.indexOf(t.habitat)))).sort((a,b)=>meta.basins.findIndex(v=>v.id===a.basin)-meta.basins.findIndex(v=>v.id===b.basin)||meta.regions.indexOf(a.region)-meta.regions.indexOf(b.region)||meta.habitats.indexOf(a.habitat)-meta.habitats.indexOf(b.habitat));
-    $('outlookCards').classList.toggle('single-point',state.outlookScope==='pixel');
-    const percent=p=>p<.01?'<1%':`${Math.round(p*100)}%`;
-    $('outlookCards').replaceChildren(...rows.map(t=>{
-      const e=document.createElement('article');e.className='outlook-card';const test=t.backtest.scores.baseline_available,retro=t.backtest.scores.all_retrospective;
-      const title=document.createElement('h3');title.textContent=t.habitat==='coral'?'Coral reefs':t.habitat;const region=document.createElement('p');region.className='region-name';region.textContent=t.region;
-      const pair=document.createElement('div');pair.className='probability-pair';pair.innerHTML=`<div><strong>${percent(t.probability)}</strong><span>Climate-model estimate</span></div><div class="baseline-prob"><strong>${percent(t.historicalProbability)}</strong><span>Historical baseline</span></div>`;
-      const track=document.createElement('div');track.className='probability-track';track.innerHTML=`<span style="width:${t.probability*100}%"></span><i style="left:${t.historicalProbability*100}%" title="Historical baseline"></i>`;
-      const threshold=document.createElement('p');threshold.className='threshold';threshold.textContent=`High-exposure threshold: >${number(t.highExposureThresholdDays,1)} MHW days / season`;
-      const validation=document.createElement('div');validation.className='validation-line';const skill=S.finite(test.skill)?`${signed(test.skill*100,1)}%`:'—';validation.innerHTML=`<span>Backtest: ${test.nTest} seasons</span><span>Brier skill: ${skill}</span>`;
-      const detail=document.createElement('details'),summary=document.createElement('summary');summary.textContent='How reliable is this?';const text=document.createElement('p');
-      text.textContent=`Brier skill compares earlier-year-only predictions with a historical-probability baseline; zero is equal performance. The ${test.nTest}-season backtest uses years after the SST baseline was available. ${test.nTest<8?'This short validation record does not establish alert reliability. ':''}The full retrospective test has ${retro.nTest} seasons and ${S.finite(retro.skill)?signed(retro.skill*100,1)+'%':'unavailable'} skill. Training: ${t.trainingSeasons} complete ${t.season} seasons (${t.trainingFirstYear}–${t.trainingLastYear}). Predictors: Niño-3.4, NAO, AO, EAWR, North Atlantic SST anomaly and PDO. IOD is omitted from this fixed panel because its current archive is delayed. These probabilities are statistical model estimates, not validated warning levels.`;
-      detail.append(summary,validation,text);e.append(title,region,pair,track,threshold,detail);return e;
-    }));
-    if(!rows.length)$('outlookCards').innerHTML='<div class="unavailable-outlook">Select at least one habitat to display its seasonal model estimate.</div>';
+    window.dispatchEvent(new CustomEvent('atlasoutlookchange',{detail:{rows}}));
+
   }
   function stop(){clearInterval(state.timer);state.timer=null;$('play').textContent='';$('play').setAttribute('aria-label','Play annual maps');}
   function forecastAvailability(){const enabled=!!outlook.pixelOutlooks[state.product];document.querySelector('#metric option[value="outlook_probability"]').disabled=!enabled;if(!enabled&&state.mapMode==='probability'){state.mapMode='history';$('metric').value=state.metric;}}
@@ -332,8 +322,9 @@
     $('basemap').onchange=()=>{if($('basemap').value==='satellite'){map.removeLayer(landLayer);satelliteLayer.addTo(map);}else{map.removeLayer(satelliteLayer);landLayer.addTo(map);}};
     document.querySelectorAll('input[name="coverage"]').forEach(el=>el.onchange=()=>{el.checked?coverageLayers[el.value].addTo(map):map.removeLayer(coverageLayers[el.value]);});
     $('pixelOpacity').oninput=()=>{state.pixelOpacity=Number($('pixelOpacity').value);pixelLayer.draw();};$('showPixels').onchange=()=>{state.showPixels=$('showPixels').checked;pixelLayer.draw();};
-    $('basin').onchange=()=>{state.basin=$('basin').value;state.region='all';regionControls();filterChanged();fitStudy();const u=new URL(location.href);u.searchParams.set('basin',state.basin);history.replaceState(null,'',u);};
+    $('basin').onchange=()=>{state.selection=null;state.basin=$('basin').value;state.region='all';regionControls();filterChanged();fitStudy();const u=new URL(location.href);u.searchParams.set('basin',state.basin);history.replaceState(null,'',u);};
     $('region').onchange=()=>{state.region=$('region').value;filterChanged();};
+    $('historySecondary').onchange=()=>{state.historySecondary=$('historySecondary').value;renderHistory();};
     $('showTrend').onchange=()=>{state.showTrend=$('showTrend').checked;renderHistory();};$('climateTrend').onchange=()=>{state.climateTrend=$('climateTrend').checked;renderClimate();};
     document.querySelectorAll('input[name="habitat"]').forEach(el=>el.onchange=()=>{state.habitats=[...document.querySelectorAll('input[name="habitat"]:checked')].reduce((s,e)=>s+Number(e.value),0);filterChanged();});
     $('year').oninput=yearChanged;
@@ -387,8 +378,9 @@
     setYear(year){if(year===state.year||!meta.products[state.product].years.includes(year)||state.mapMode==='probability')return;$('year').value=year;yearChanged();},
     setRange(from,to){state.from=Math.max(meta.products[state.product].years[0],Math.ceil(from));state.to=Math.min(2025,Math.floor(to));if(state.from>state.to)return;$('fromYear').value=state.from;$('toYear').value=state.to;renderHistory();renderModel();window.dispatchEvent(new Event('atlasrangechange'));},
     redraw(){pixelLayer.draw();},
+    selectBounds(bounds){state.selection=bounds?[bounds.getWest(),bounds.getSouth(),bounds.getEast(),bounds.getNorth()]:null;if(bounds){const centre=bounds.getCenter(),i=nearest(centre.lat,centre.lng,true);if(i>=0)selectPixel(i);}filterChanged();window.dispatchEvent(new Event('atlasselectionchange'));},
     async visit(step){
-      state.basin=step.basin;state.region='all';state.habitats=7;state.product='mur';state.metric='mhw_days';state.mapMode=step.forecast?'probability':'history';
+      state.basin=step.basin;state.region='all';state.habitats=15;state.selection=null;state.product='mur';state.metric='mhw_days';state.mapMode=step.forecast?'probability':'history';
       $('basin').value=state.basin;$('product').value=state.product;$('metric').value=step.forecast?'outlook_probability':state.metric;document.querySelectorAll('input[name="habitat"]').forEach(e=>e.checked=true);regionControls();setYearControls();state.year=2025;$('year').value=state.year;
       const i=nearest(step.lat,step.lon,true);state.pixel=i;await renderMap();selectPixel(i);const point=pixels[i];map.flyTo([point[1],point[0]],8,{animate:!matchMedia('(prefers-reduced-motion: reduce)').matches,duration:.8});
       if(step.forecast){state.outlookScope='pixel';$('outlookScope').value='pixel';await renderOutlook();const f=await pointForecast(state.product,i);return {en:`At ${coordinate(i)}, the ${f.season} high-exposure probability is ${percent(f.probability)}, compared with a historical ${percent(f.baseline)}. Brier skill: ${number(f.skill,2)}; ${f.nTest} test seasons.`,ar:`عند ${coordinate(i)}، احتمال ارتفاع التعرض في ${f.season} هو ${percent(f.probability)}، مقابل احتمال تاريخي ${percent(f.baseline)}. مهارة براير ${number(f.skill,2)} خلال ${f.nTest} مواسم تحقق.`};}
