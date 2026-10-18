@@ -1,0 +1,257 @@
+/* Red Sea Habitat Heatwave Atlas. All scientific arrays are fetched locally. */
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id), S = window.AtlasStats;
+  const labels = {Nino34: 'Niño-3.4', IOD: 'IOD', NAO: 'NAO', AO: 'AO', EAWR: 'EAWR', NAtl_SSTA: 'N. Atlantic SST', PDO: 'PDO',localSst:'Annual SST (OISST)'};
+  const modeColors = {Nino34:'#c76f4e', IOD:'#458e87', NAO:'#847799', AO:'#7894a0', EAWR:'#ac9261', NAtl_SSTA:'#b45c6c', PDO:'#7f9355',localSst:'#ae8d4c'};
+  const metricInfo = {
+    mhw_days: {name:'Heatwave days', unit:'days', axis:'Heatwave days / year', max:200, digits:0},
+    mhw_frequency: {name:'Event frequency', unit:'events', axis:'Events / year', max:12, digits:1},
+    mhw_mean_duration: {name:'Mean event duration', unit:'days', axis:'Mean duration (days)', max:40, digits:1},
+    mhw_mean_intensity: {name:'Mean intensity', unit:'°C', axis:'Mean intensity (°C above threshold)', max:1.5, digits:2},
+    mhw_max_intensity: {name:'Maximum intensity', unit:'°C', axis:'Maximum intensity (°C above threshold)', max:3, digits:2},
+    mhw_cumulative_intensity: {name:'Cumulative intensity', unit:'°C days', axis:'Cumulative intensity (°C days)', max:160, digits:1}
+  };
+  const state = {product:'mur', metric:'mhw_days', year:2025, region:'all', habitats:7, pixel:0, pins:[], arrays:new Map(),
+    from:2003, to:2025, lag:0, benchmark:'trend', index:'Nino34', detrend:true, selectedModes:new Set(['Nino34','IOD','NAtl_SSTA']),
+    step:'annual', scale:'standard', timer:null, generation:0};
+  let meta, pixels, climate, map, pixelLayer, selectedMarker, sourceMarker, sourceLine, climateZ, mapLand;
+  let modelData = null, currentHistory = [], climateExport = [];
+  const pinColors = ['#3f7f82','#997ba0','#9b954d','#5f809d','#c68f57'];
+  const config = {responsive:true, displaylogo:false, scrollZoom:false, modeBarButtonsToRemove:['lasso2d','select2d','autoScale2d'],
+    toImageButtonOptions:{format:'svg', filename:'redsea_habitat_mhw', height:550, width:1100, scale:1}};
+  const baseLayout = {paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)', font:{family:'system-ui, sans-serif',size:10,color:'#657775'},
+    margin:{l:58,r:20,t:30,b:46}, hovermode:'x unified', hoverlabel:{font:{size:10},bgcolor:'#fff',bordercolor:'#ddd'},
+    xaxis:{gridcolor:'#f0f1eb',linecolor:'#dfe3d9',zeroline:false,tickformat:'d',fixedrange:false},
+    yaxis:{gridcolor:'#edf0e7',zeroline:false,title:{font:{size:10}},fixedrange:false},
+    legend:{orientation:'h',x:0,y:1.15,font:{size:10}}, showlegend:true};
+  function layout(extra={}) { return {...baseLayout,...extra,xaxis:{...baseLayout.xaxis,...extra.xaxis},yaxis:{...baseLayout.yaxis,...extra.yaxis}}; }
+  function note(message) { $('toast').textContent=message; $('toast').hidden=false; clearTimeout(note.timer); note.timer=setTimeout(()=>{$('toast').hidden=true;},4000); }
+  function loading(message) { $('loadingText').textContent=message; $('loading').hidden=false; }
+  async function json(path) { const r=await fetch(path); if(!r.ok)throw Error(`${path}: HTTP ${r.status}`); return r.json(); }
+  async function array(product, metric) {
+    const key=`${product}_${metric}`;
+    if(!state.arrays.has(key)) state.arrays.set(key, fetch(`./data/${key}.f32`).then(r=>{if(!r.ok)throw Error(`Unable to load ${key}`);return r.arrayBuffer();}).then(buffer=>{
+      const a=new Float32Array(buffer), p=meta.products[product];
+      if(a.length!==p.years.length*p.cells.length)throw Error(`Unexpected data dimensions: ${key}`);return a;
+    }).catch(e=>{state.arrays.delete(key);throw e;}));
+    return state.arrays.get(key);
+  }
+  function sourceIndex(pixel, product=state.product) {return pixels[pixel][product==='mur'?4:5];}
+  function series(pixel, a, product=state.product) {
+    const p=meta.products[product], n=p.cells.length, index=sourceIndex(pixel,product);
+    return p.years.map((_,i)=>{const v=a[i*n+index];return Number.isFinite(v)?v:null;});
+  }
+  function number(v,digits=1) {return S.finite(v)?v.toLocaleString('en',{minimumFractionDigits:digits,maximumFractionDigits:digits}):'—';}
+  function signed(v,digits=1) {return S.finite(v)?`${v>=0?'+':''}${number(v,digits)}`:'—';}
+  function coordinate(i) {const p=pixels[i];return `${p[1].toFixed(2)}°N, ${p[0].toFixed(2)}°E`;}
+  function pixelId(i) {return `ghrsst_${String(pixels[i][8]).padStart(5,'0')}_${String(pixels[i][9]).padStart(5,'0')}`;}
+  function visible(p) {return (p[2]&state.habitats)!==0&&(state.region==='all'||p[3]===Number(state.region));}
+  function color(v, max) {
+    if(!S.finite(v))return '#6b8583';
+    const stops=[[220,229,199],[233,205,124],[234,146,85],[208,76,64],[142,37,69]];
+    const z=Math.max(0,Math.min(.99999,v/max))*4, i=Math.floor(z), t=z-i;
+    return `rgb(${stops[i].map((c,k)=>Math.round(c+(stops[i+1][k]-c)*t)).join(',')})`;
+  }
+  function inYears(year) {return year>=state.from&&year<=state.to;}
+  function download(name, content, mime='text/csv;charset=utf-8') {
+    const url=URL.createObjectURL(new Blob([content],{type:mime})), a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);
+  }
+  function csv(rows) {if(!rows.length)return '';const keys=Object.keys(rows[0]),escape=v=>{const s=v===null||v===undefined?'':String(v);return /[",\n]/.test(s)?`"${s.replaceAll('"','""')}"`:s;};return [keys,...rows.map(r=>keys.map(k=>r[k]))].map(row=>row.map(escape).join(',')).join('\r\n');}
+  function showMethods() {$('methodsDialog').showModal();}
+
+  function makeMap(land) {
+    mapLand=land;
+    map=L.map('map',{zoomControl:false,attributionControl:true,minZoom:3,maxZoom:13,preferCanvas:true}).fitBounds([[10,32],[30,52]],{padding:[55,45]});
+    map.attributionControl.setPrefix('');map.attributionControl.addAttribution('Natural Earth · Habitat grid');
+    L.control.zoom({position:'topright'}).addTo(map);
+    L.geoJSON(land,{interactive:false,style:{color:'#51726d',weight:.55,fillColor:'#24464a',fillOpacity:1}}).addTo(map);
+    for(const [name,lat,lon,kind] of [['EGYPT',27.7,30.3,'country'],['SAUDI ARABIA',25.7,43.5,'country'],['SUDAN',20.8,33.5,'country'],['ERITREA',15.7,37.4,'country'],['YEMEN',15.8,47,'country'],['SOMALIA',9.6,47.5,'country'],['Red Sea',22.7,38.9,'sea'],['Gulf of Aden',12.5,47.8,'sea']]) {
+      L.tooltip({permanent:true,direction:'center',className:`country-label ${kind==='sea'?'sea-label':''}`,interactive:false}).setLatLng([lat,lon]).setContent(name).addTo(map);
+    }
+    const HabitatLayer=L.Layer.extend({
+      onAdd(mapRef){this._map=mapRef;this.canvas=L.DomUtil.create('canvas','habitat-canvas');this.canvas.style.position='absolute';this.canvas.style.pointerEvents='none';mapRef.getPane('overlayPane').appendChild(this.canvas);mapRef.on('moveend zoomend resize',this.draw,this);this.draw();},
+      onRemove(mapRef){mapRef.off('moveend zoomend resize',this.draw,this);this.canvas.remove();},
+      draw(){if(!this.a)return;const size=this._map.getSize(),dpr=window.devicePixelRatio||1,canvas=this.canvas;
+        canvas.width=size.x*dpr;canvas.height=size.y*dpr;canvas.style.width=`${size.x}px`;canvas.style.height=`${size.y}px`;
+        L.DomUtil.setPosition(canvas,this._map.containerPointToLayerPoint([0,0]));
+        const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);const p=meta.products[state.product],n=p.cells.length,yi=p.years.indexOf(state.year),info=metricInfo[state.metric],bounds=this._map.getBounds().pad(.03);
+        const step=Math.max(1.7,Math.abs(this._map.latLngToContainerPoint([20,40.01]).x-this._map.latLngToContainerPoint([20,40]).x));
+        let count=0;
+        for(let i=0;i<pixels.length;i++){const point=pixels[i];if(!visible(point))continue;count++;if(!bounds.contains([point[1],point[0]]))continue;
+          const v=this.a[yi*n+sourceIndex(i)],q=this._map.latLngToContainerPoint([point[1],point[0]]);ctx.fillStyle=color(v,info.max);ctx.fillRect(q.x-step/2,q.y-step/2,step,step);
+        }
+        $('visibleCount').textContent=`${count.toLocaleString()} habitat cells · click to explore`;
+      }
+    });
+    pixelLayer=new HabitatLayer().addTo(map);
+    selectedMarker=L.circleMarker([0,0],{radius:7,color:'#fff3ca',weight:2,fillColor:'#ffd09c',fillOpacity:.2,interactive:false}).addTo(map);
+    sourceMarker=L.circleMarker([0,0],{radius:3,color:'#b4d2c2',weight:1,fillOpacity:.6,interactive:false}).addTo(map);
+    sourceLine=L.polyline([],{color:'#afd4c2',weight:1,dashArray:'3,4',interactive:false}).addTo(map);
+    map.on('click',e=>{
+      let best=-1,distance=14*14;
+      for(let i=0;i<pixels.length;i++){const p=pixels[i];if(!visible(p))continue;const q=map.latLngToContainerPoint([p[1],p[0]]),d=(q.x-e.containerPoint.x)**2+(q.y-e.containerPoint.y)**2;if(d<distance){distance=d;best=i;}}
+      if(best>=0)selectPixel(best);else note('Zoom towards the coloured coastline, then select a habitat cell.');
+    });
+  }
+
+  function setYearControls(reset=true) {
+    const p=meta.products[state.product];if(reset){state.from=p.years[0];state.to=p.years.at(-1);}
+    for(const id of ['fromYear','toYear']){$(id).replaceChildren(...p.years.map(y=>new Option(y,y)));}
+    $('fromYear').value=state.from;$('toYear').value=state.to;
+    $('year').min=p.years[0];$('year').max=p.years.at(-1);$('yearStart').textContent=p.years[0];
+    state.year=Math.max(p.years[0],Math.min(p.years.at(-1),state.year));$('year').value=state.year;
+  }
+  async function renderMap() {
+    const product=state.product,metric=state.metric,token=++state.generation;
+    loading('Loading habitat-pixel histories…');
+    try {const a=await array(product,metric);if(token!==state.generation)return;pixelLayer.a=a;pixelLayer.draw();$('loading').hidden=true;updateMapText();await renderPixel();}
+    catch(e){$('loadingText').textContent=`${e.message}. Reload to try again.`;console.error(e);}
+  }
+  function updateMapText() {
+    $('mapTitle').replaceChildren(document.createTextNode(`${metricInfo[state.metric].name} `),Object.assign(document.createElement('span'),{id:'mapYear',textContent:state.year}));
+    $('yearLabel').textContent=state.year;const p=meta.products[state.product],info=metricInfo[state.metric];
+    $('mapNote').textContent=`${p.name} · ${p.resolution} SST · baseline ${p.baseline}`;
+    $('legendTitle').textContent=info.axis;$('legendMax').textContent=`${info.max}+`;updatePixelValue();
+    $('climateYearLabel').textContent=`Climate in ${state.year}`;
+    $('yearClimateValues').replaceChildren(...climate.modes.map(m=>{const e=document.createElement('div'),dot=document.createElement('i'),name=document.createElement('span'),value=document.createElement('strong');dot.style.background=modeColors[m];name.textContent=labels[m];value.textContent=`${signed(climateZ[m][state.year-1982],1)}σ`;e.append(dot,name,value);return e;}));
+  }
+  function updatePixelValue() {
+    if(!pixelLayer?.a)return;const p=meta.products[state.product],a=pixelLayer.a,v=a[p.years.indexOf(state.year)*p.cells.length+sourceIndex(state.pixel)];
+    $('pixelValue').textContent=number(v,metricInfo[state.metric].digits);
+    $('pixelUnit').textContent=`${metricInfo[state.metric].unit} in ${state.year}`;
+  }
+  function selectPixel(index, pan=false) {
+    state.pixel=index;const p=pixels[index];if(pan)map.setView([p[1],p[0]],Math.max(map.getZoom(),8));
+    renderPixel().catch(e=>{console.error(e);note('Unable to update the selected cell.');});
+    const u=new URL(location.href);u.searchParams.set('lat',p[1].toFixed(2));u.searchParams.set('lon',p[0].toFixed(2));u.searchParams.set('product',state.product);history.replaceState(null,'',u);
+  }
+  async function renderPixel() {
+    const index=state.pixel,product=state.product,metric=state.metric,a=await array(product,metric);
+    if(index!==state.pixel||product!==state.product||metric!==state.metric)return;
+    const p=pixels[index],native=meta.products[product],source=native.cells[sourceIndex(index)],values=series(index,a),ok=values.filter(S.finite),info=metricInfo[metric];
+    selectedMarker.setLatLng([p[1],p[0]]);sourceMarker.setLatLng([source[1],source[0]]);sourceLine.setLatLngs([[p[1],p[0]],[source[1],source[0]]]);
+    $('pixelTitle').textContent=coordinate(index);$('pixelRegion').textContent=meta.regions[p[3]];
+    $('pixelHabitats').replaceChildren(...meta.habitats.filter((_,i)=>p[2]&(1<<i)).map(h=>{const e=document.createElement('span');e.className=`habitat-badge ${h}`;e.textContent=h;return e;}));
+    updatePixelValue();$('recordMean').textContent=ok.length?number(S.mean(ok),info.digits):'—';
+    $('pixelTrend').textContent=signed(S.trend(native.years,values),info.digits===0?1:info.digits);
+    const peak=ok.length?Math.max(...ok):null,idx=values.indexOf(peak);$('peakYear').textContent=idx>=0?native.years[idx]:'—';
+    $('sourceCell').textContent=`${source[1].toFixed(product==='mur'?2:3)}°N, ${source[0].toFixed(product==='mur'?2:3)}°E · ${native.name}`;
+    $('attachmentNote').textContent=`${number(p[product==='mur'?6:7],2)} km from habitat centre. ${product==='oisst'?'A shared 0.25° SST cell.':'Nearest valid 0.01° marine cell.'}`;
+    Plotly.react('sparkline',[{x:native.years,y:values,type:'scatter',mode:'lines',line:{color:'#ca7756',width:1.5},fill:'tozeroy',fillcolor:'#f3decc80',hovertemplate:'%{x}: %{y:.2f}<extra></extra>'}],{margin:{l:0,r:0,t:5,b:0},paper_bgcolor:'transparent',plot_bgcolor:'transparent',showlegend:false,xaxis:{visible:false},yaxis:{visible:false},font:{size:9}},{displayModeBar:false,responsive:true});
+    await Promise.all([renderHistory(),renderModel()]);
+  }
+  async function renderHistory() {
+    const product=state.product,metric=state.metric,a=await array(product,metric);if(product!==state.product||metric!==state.metric)return;
+    const p=meta.products[product],indices=[state.pixel,...state.pins.filter(i=>i!==state.pixel)];currentHistory=[];
+    const traces=indices.map((index,j)=>{const values=series(index,a),years=p.years.filter(inYears),v=values.filter((_,k)=>inYears(p.years[k]));
+      years.forEach((year,k)=>currentHistory.push({pixel:pixelId(index),latitude:pixels[index][1],longitude:pixels[index][0],product:p.name,year,metric,value:v[k]}));
+      return {x:years,y:v,type:'scatter',mode:'lines+markers',name:coordinate(index),line:{color:j===0?'#c87552':pinColors[(j-1)%pinColors.length],width:j===0?2.5:1.6},marker:{size:4},connectgaps:false,hovertemplate:`%{y:.2f} ${metricInfo[metric].unit}<extra>${coordinate(index)}</extra>`};
+    });
+    Plotly.react('historyPlot',traces,layout({yaxis:{title:metricInfo[metric].axis},xaxis:{dtick:Math.max(1,Math.round((state.to-state.from)/9))},shapes:[{type:'line',xref:'x',x0:state.year,x1:state.year,yref:'paper',y0:0,y1:1,line:{color:'#a6b3a0',width:1,dash:'dot'}}]}),config);
+    $('historyCaption').textContent=`${p.name} · ${state.from}–${state.to} · baseline ${p.baseline} · ${metricInfo[metric].unit}`;
+    $('pins').replaceChildren(...state.pins.map((index,j)=>{const e=document.createElement('span');e.className='pin';const dot=document.createElement('i');dot.className='pin-dot';dot.style.background=pinColors[j%pinColors.length];const b=document.createElement('button');b.textContent='×';b.setAttribute('aria-label',`Remove ${coordinate(index)}`);b.onclick=()=>{state.pins=state.pins.filter(i=>i!==index);renderHistory();};e.append(dot,document.createTextNode(coordinate(index)),b);return e;}));
+  }
+  async function renderModel() {
+    const product=state.product,metric=state.metric,pixel=state.pixel;
+    const [a,sst]=await Promise.all([array(product,metric),array('oisst','sst')]);
+    if(product!==state.product||metric!==state.metric||pixel!==state.pixel)return;
+    const years=meta.products[product].years, values=series(pixel,a), sstSeries=series(pixel,sst,'oisst'),annual=climate.annual;
+    const rows=years.map((year,i)=>{const climateIndex=annual.years.indexOf(year-state.lag),sstIndex=meta.products.oisst.years.indexOf(year);
+      return {year, observed:values[i], reference:state.benchmark==='trend'?year:sstSeries[sstIndex],
+        indices:climate.modes.map(m=>climateIndex>=0?annual.values[m][climateIndex]:null),sst:sstSeries[sstIndex]};
+    }).filter(r=>inYears(r.year)&&[r.observed,r.reference,...r.indices].every(S.finite));
+    if(rows.length<12){modelData=null;$('modelSample').textContent=`${rows.length} complete years · choose ≥12`;for(const id of ['modelR2','modelCv'])$(id).textContent='—';$('varianceBar').replaceChildren();$('shares').textContent='Select a longer period for the eight-predictor model.';Plotly.react('modelPlot',[],layout({annotations:[{text:'Choose at least 12 complete years.',xref:'paper',yref:'paper',x:.5,y:.5,showarrow:false}]}),config);renderPaired(years,values,sstSeries);return;}
+    const ys=rows.map(r=>r.year),y=rows.map(r=>r.observed),columns=[rows.map(r=>r.reference),...climate.modes.map((_,j)=>rows.map(r=>r.indices[j]))];
+    const model=S.shapley(y,columns),base=S.fit(y,[columns[0]]),reference=state.benchmark==='trend'?'Long-term trend':'Annual SST (OISST)';
+    modelData={rows,model,base,names:[reference,...climate.modes.map(m=>labels[m])],product,metric};
+    $('modelSample').textContent=`${rows.length} complete years · ${ys[0]}–${ys.at(-1)}`;
+    $('modelR2').textContent=number(model.r2,2);$('modelCv').textContent=number(model.cvR2,2);
+    Plotly.react('modelPlot',[
+      {x:ys,y,type:'scatter',mode:'lines+markers',name:'Observed',line:{color:'#c77553',width:2},marker:{size:4}},
+      {x:ys,y:base.pred,type:'scatter',mode:'lines',name:reference,line:{color:'#8e9e8c',width:1.5,dash:'dot'}},
+      {x:ys,y:model.pred,type:'scatter',mode:'lines',name:'Combined model',line:{color:'#2e7374',width:1.8}}
+    ],layout({margin:{l:52,r:12,t:37,b:37},legend:{...baseLayout.legend,y:1.17,font:{size:9}},yaxis:{title:metricInfo[metric].unit},xaxis:{dtick:Math.max(1,Math.round((state.to-state.from)/7))}}),config);
+    const colors=['#b7a277',...climate.modes.map(m=>modeColors[m])],bar=[];
+    model.shares.forEach((v,j)=>{const e=document.createElement('span');e.style.width=`${v*100}%`;e.style.background=colors[j];e.title=`${modelData.names[j]}: ${number(v*100,1)}%`;bar.push(e);});$('varianceBar').replaceChildren(...bar);
+    $('shares').replaceChildren(...model.shares.map((share,j)=>{const e=document.createElement('div');e.className='share-row';const dot=document.createElement('i');dot.style.background=colors[j];const name=document.createElement('span');name.textContent=modelData.names[j];const value=document.createElement('strong');value.textContent=`${number(share*100,1)}%`;value.title=`Coefficient per predictor SD: ${signed(model.beta[j],3)} ${metricInfo[metric].unit}`;e.append(dot,name,value);return e;}));
+    const residual=document.createElement('div');residual.className='share-row';residual.innerHTML=`<i style="background:#e2e5dc"></i><span>Residual</span><strong>${number((1-model.r2)*100,1)}%</strong>`;$('shares').append(residual);
+    renderPaired(years,values,sstSeries);
+  }
+  function renderPaired(years,values,sstSeries) {
+    const local=state.index==='localSst';
+    const keep=years.map((year,i)=>({year,y:values[i],x:local?sstSeries[meta.products.oisst.years.indexOf(year)]:climate.annual.values[state.index][climate.annual.years.indexOf(year-state.lag)]})).filter(r=>inYears(r.year)&&S.finite(r.y)&&S.finite(r.x));
+    const ys=keep.map(r=>r.year),rawY=keep.map(r=>r.y),rawX=keep.map(r=>r.x);
+    const y=state.detrend?S.detrend(rawY,ys):rawY,x=state.detrend?S.detrend(rawX,ys):rawX,r=S.correlation(y,x),d=state.detrend?'Detrended':'Raw';
+    $('pairedTitle').textContent=`${labels[state.index]} & ${metricInfo[state.metric].name.toLowerCase()}`;
+    $('pairedStat').textContent=`${d} r = ${number(r,2)} · n = ${keep.length}`;
+    Plotly.react('pairedPlot',[
+      {x:ys,y:S.standardize(y),type:'scatter',mode:'lines+markers',name:`Heatwave metric${state.detrend?' (detrended)':''}`,line:{color:'#245a5f',width:2},marker:{size:3}},
+      {x:ys,y:S.standardize(x),type:'scatter',mode:'lines',name:labels[state.index],line:{color:modeColors[state.index],width:1.8}}
+    ],layout({margin:{l:52,r:15,t:35,b:38},yaxis:{title:'Standard deviations'},legend:{...baseLayout.legend,y:1.19},xaxis:{dtick:Math.max(1,Math.round((state.to-state.from)/9))}}),config);
+    $('pairedCaption').textContent=local?`${d} annual series · same-year OISST mean SST at the attached habitat source cell · standardised over the same complete years.`:`${d} annual series · index lead ${state.lag} year${state.lag===1?'':'s'} · both series standardised over the same complete years.`;
+  }
+  function renderClimate() {
+    const monthly=state.step==='monthly',data=climate[state.step],x0=monthly?data.dates:data.years,keep=x0.map((x,i)=>({x,i,year:monthly?Number(x.slice(0,4)):x})).filter(d=>inYears(d.year));
+    const modes=climate.modes.filter(m=>state.selectedModes.has(m));climateExport=[];
+    keep.forEach(d=>{const row={date:d.x};modes.forEach(m=>{row[m]=data.values[m][d.i];});climateExport.push(row);});
+    const traces=modes.map(m=>{const raw=keep.map(d=>data.values[m][d.i]),y=state.scale==='standard'?S.standardize(raw):raw;return {x:keep.map(d=>d.x),y,type:'scatter',mode:'lines',name:labels[m],line:{color:modeColors[m],width:monthly?1.3:2},connectgaps:false};});
+    Plotly.react('climatePlot',traces,layout({xaxis:{type:monthly?'date':'linear',tickformat:monthly?'%Y':'d',dtick:monthly?undefined:Math.max(1,Math.round((state.to-state.from)/9))},yaxis:{title:state.scale==='standard'?'Standard deviations':'Original index values'},annotations:traces.length?[]:[{text:'Select one or more indices above.',xref:'paper',yref:'paper',x:.5,y:.5,showarrow:false}]}),config);
+    $('climateCaption').textContent=state.scale==='standard'?`${monthly?'Monthly':'Annual'} indices · standardised within ${state.from}–${state.to} · downloads retain original values.`:'Original values; index units differ. Use standardised scale for direct comparison.';
+  }
+  function stop(){clearInterval(state.timer);state.timer=null;$('play').textContent='▶';$('play').setAttribute('aria-label','Play annual maps');}
+  function exportMap(){
+    const canvas=document.createElement('canvas'),w=$('map').clientWidth,h=$('map').clientHeight;
+    canvas.width=w*2;canvas.height=h*2;const ctx=canvas.getContext('2d');ctx.scale(2,2);ctx.fillStyle='#102f37';ctx.fillRect(0,0,w,h);
+    ctx.fillStyle='#24464a';ctx.strokeStyle='#51726d';ctx.lineWidth=.6;
+    for(const feature of mapLand.features){const geometry=feature.geometry,polygons=geometry.type==='Polygon'?[geometry.coordinates]:geometry.coordinates;
+      for(const polygon of polygons){ctx.beginPath();for(const ring of polygon){ring.forEach((xy,i)=>{const p=map.latLngToContainerPoint([xy[1],xy[0]]);if(i===0)ctx.moveTo(p.x,p.y);else ctx.lineTo(p.x,p.y);});ctx.closePath();}ctx.fill('evenodd');ctx.stroke();}
+    }
+    ctx.drawImage(pixelLayer.canvas,0,0,w,h);
+    const selected=map.latLngToContainerPoint([pixels[state.pixel][1],pixels[state.pixel][0]]);ctx.beginPath();ctx.arc(selected.x,selected.y,7,0,Math.PI*2);ctx.strokeStyle='#fff0b6';ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle='#102f37dd';ctx.fillRect(0,0,w,65);ctx.fillRect(0,h-70,w,70);ctx.fillStyle='#eeeade';ctx.font='15px system-ui';ctx.fillText(`${metricInfo[state.metric].name} · ${state.year} · ${meta.products[state.product].name}`,20,28);ctx.font='10px system-ui';ctx.fillText('RED SEA HABITAT HEATWAVE ATLAS · habitat cells only',20,47);
+    const info=metricInfo[state.metric];for(let i=0;i<140;i++){ctx.fillStyle=color(i/139*info.max,info.max);ctx.fillRect(20+i,h-42,1,6);}ctx.fillStyle='#ceded4';ctx.font='9px system-ui';ctx.fillText(`${info.axis}     0 — ${info.max}+`,20,h-50);ctx.fillText(`Baseline ${meta.products[state.product].baseline} · ${meta.products[state.product].resolution} SST`,20,h-18);
+    ctx.textAlign='right';ctx.fillText('Natural Earth · UNEP-WCMC habitats · NASA/JPL · NOAA',w-20,h-18);
+    canvas.toBlob(blob=>{if(!blob){note('Map image could not be generated.');return;}const a=document.createElement('a'),url=URL.createObjectURL(blob);a.href=url;a.download=`habitat_map_${state.product}_${state.year}.png`;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);},'image/png');
+  }
+  function yearChanged(){state.year=Number($('year').value);pixelLayer.draw();updateMapText();Plotly.relayout('historyPlot',{'shapes[0].x0':state.year,'shapes[0].x1':state.year}).catch(()=>{});}
+  function bind() {
+    $('product').onchange=()=>{stop();state.product=$('product').value;setYearControls();renderMap();renderClimate();};
+    $('metric').onchange=()=>{state.metric=$('metric').value;renderMap();};
+    $('region').onchange=()=>{state.region=$('region').value;filterChanged();};
+    document.querySelectorAll('input[name="habitat"]').forEach(el=>el.onchange=()=>{state.habitats=[...document.querySelectorAll('input[name="habitat"]:checked')].reduce((s,e)=>s+Number(e.value),0);filterChanged();});
+    $('year').oninput=yearChanged;
+    $('play').onclick=()=>{if(state.timer){stop();return;}$('play').textContent='Ⅱ';$('play').setAttribute('aria-label','Pause annual maps');const p=meta.products[state.product];if(state.year===p.years.at(-1)){$('year').value=p.years[0];yearChanged();}state.timer=setInterval(()=>{if(state.year>=p.years.at(-1)){stop();return;}$('year').value=state.year+1;yearChanged();},750);};
+    $('fitMap').onclick=()=>map.fitBounds([[10,32],[30,52]],{padding:[55,45]});
+    $('pinPixel').onclick=()=>{if(state.pins.includes(state.pixel)){note('This cell is already in the comparison.');return;}if(state.pins.length>=5){note('Compare up to five pinned cells. Remove one to add another.');return;}state.pins.push(state.pixel);renderHistory();note('Cell added. Select another cell on the map to compare.');};
+    $('clearPins').onclick=()=>{state.pins=[];renderHistory();};
+    $('fromYear').onchange=()=>{state.from=Number($('fromYear').value);if(state.from>state.to){state.to=state.from;$('toYear').value=state.to;}renderHistory();renderModel();renderClimate();};
+    $('toYear').onchange=()=>{state.to=Number($('toYear').value);if(state.to<state.from){state.from=state.to;$('fromYear').value=state.from;}renderHistory();renderModel();renderClimate();};
+    $('benchmark').onchange=()=>{state.benchmark=$('benchmark').value;renderModel();};$('lag').onchange=()=>{state.lag=Number($('lag').value);renderModel();};
+    $('pairedIndex').onchange=()=>{state.index=$('pairedIndex').value;renderModel();};$('detrend').onchange=()=>{state.detrend=$('detrend').checked;renderModel();};
+    $('climateStep').onchange=()=>{state.step=$('climateStep').value;renderClimate();};$('climateScale').onchange=()=>{state.scale=$('climateScale').value;renderClimate();};
+    $('pairedIndex').replaceChildren(...[...climate.modes,'localSst'].map(m=>new Option(labels[m],m)));
+    $('indexChips').replaceChildren(...climate.modes.map(m=>{const label=document.createElement('label');label.className='index-chip';const input=document.createElement('input');input.type='checkbox';input.checked=state.selectedModes.has(m);input.value=m;input.onchange=()=>{input.checked?state.selectedModes.add(m):state.selectedModes.delete(m);renderClimate();};const dot=document.createElement('i');dot.style.background=modeColors[m];label.append(input,dot,document.createTextNode(labels[m]));return label;}));
+    for(const id of ['methodsOpen','methodsFooter','modelHelp'])$(id).onclick=showMethods;
+    $('methodsClose').onclick=()=>$('methodsDialog').close();$('methodsDialog').onclick=e=>{if(e.target===$('methodsDialog'))$('methodsDialog').close();};
+    $('locateForm').onsubmit=e=>{e.preventDefault();const parts=$('locate').value.trim().split(/[,\s]+/).map(Number);if(parts.length!==2||!parts.every(Number.isFinite)||parts[0]<-90||parts[0]>90||parts[1]<-180||parts[1]>180){$('locateMessage').textContent='Enter latitude, longitude; for example 21.5, 39.1';return;}const i=nearest(parts[0],parts[1],true);if(i<0){$('locateMessage').textContent='Select at least one habitat first.';return;}const d=Math.hypot(pixels[i][1]-parts[0],(pixels[i][0]-parts[1])*Math.cos(parts[0]*Math.PI/180))*111;$('locateMessage').textContent=`Nearest retained habitat cell: about ${number(d,1)} km away`;selectPixel(i,true);};
+    $('downloadHistory').onclick=()=>download(`habitat_history_${state.product}_${state.metric}.csv`,csv(currentHistory));
+    $('downloadClimate').onclick=()=>download(`climate_indices_${state.step}_${state.from}_${state.to}.csv`,csv(climateExport));
+    $('downloadPixel').onclick=async()=>{const pixel=state.pixel,product=state.product,p=meta.products[product],arrays=await Promise.all(meta.metrics.map(m=>array(product,m))),sst=await array('oisst','sst'),ss=series(pixel,sst,'oisst');
+      const rows=p.years.map((year,j)=>{const row={pixel:pixelId(pixel),latitude:pixels[pixel][1],longitude:pixels[pixel][0],product:p.name,baseline:p.baseline,year,source_latitude:p.cells[sourceIndex(pixel,product)][1],source_longitude:p.cells[sourceIndex(pixel,product)][0]};meta.metrics.forEach((m,k)=>{row[m]=series(pixel,arrays[k],product)[j];});row.oisst_annual_mean_sst=ss[meta.products.oisst.years.indexOf(year)];climate.modes.forEach(m=>{row[m]=climate.annual.values[m][climate.annual.years.indexOf(year)];});return row;});download(`${pixelId(pixel)}_${product}.csv`,csv(rows));};
+    $('downloadModel').onclick=()=>{if(!modelData){note('Select a longer period to fit the model.');return;}const d=modelData;download(`pixel_model_${pixelId(state.pixel)}.csv`,csv(d.rows.map((row,k)=>{const out={pixel:pixelId(state.pixel),latitude:pixels[state.pixel][1],longitude:pixels[state.pixel][0],year:row.year,observed:row.observed,fitted:d.model.pred[k],reference_only_fit:d.base.pred[k],reference:state.benchmark,reference_value:row.reference,oisst_annual_mean_sst:row.sst,index_lead_years:state.lag,climate_year:row.year-state.lag,product:meta.products[d.product].name,metric:d.metric,r2:d.model.r2,leave_one_year_out_r2:d.model.cvR2};climate.modes.forEach((m,j)=>{out[m]=row.indices[j];});d.names.forEach((name,j)=>{out[`${name}_share_r2`]=d.model.shares[j];out[`${name}_coefficient_per_sd`]=d.model.beta[j];out[`${name}_predictor_mean`]=d.model.means[j];out[`${name}_predictor_sd`]=d.model.scales[j];});return out;})));};
+    $('mapDownload').onclick=exportMap;
+  }
+  function nearest(lat,lon,onlyVisible=false){let best=-1,distance=Infinity;for(let i=0;i<pixels.length;i++){const p=pixels[i];if(onlyVisible&&!visible(p))continue;const d=(p[1]-lat)**2+((p[0]-lon)*Math.cos(lat*Math.PI/180))**2;if(d<distance){distance=d;best=i;}}return best;}
+  function filterChanged(){pixelLayer.draw();if(!visible(pixels[state.pixel])){const index=pixels.findIndex(visible);if(index>=0)selectPixel(index);else note('Select at least one habitat to display cells.');}if(state.region!=='all'){const pts=pixels.filter(visible);if(pts.length)map.fitBounds(L.latLngBounds(pts.map(p=>[p[1],p[0]])),{padding:[70,65]});}}
+  async function init(){
+    try{[meta,climate]=await Promise.all([json('./data/metadata.json'),json('./data/climate.json')]);const [points,land]=await Promise.all([json('./data/pixels.json'),json('./data/land.geojson')]);pixels=points.rows;
+      climateZ=Object.fromEntries(climate.modes.map(m=>[m,S.standardize(climate.annual.values[m].filter((_,i)=>climate.annual.years[i]>=1982))]));
+      const params=new URLSearchParams(location.search);if(['mur','oisst'].includes(params.get('product')))state.product=params.get('product');$('product').value=state.product;
+      state.pixel=params.has('lat')&&params.has('lon')?nearest(Number(params.get('lat')),Number(params.get('lon'))):nearest(21.4,39.05);
+      makeMap(land);setYearControls();bind();await renderMap();renderClimate();document.documentElement.dataset.ready='true';
+    }catch(e){console.error(e);$('loadingText').textContent=`Atlas could not open: ${e.message}. Please reload.`;document.documentElement.dataset.error=e.message;}
+  }
+  window.AtlasDebug={state,get meta(){return meta;},get pixels(){return pixels;},get model(){return modelData;}};
+  init();
+})();
