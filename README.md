@@ -80,3 +80,22 @@ The combined builder reads `_cache/redsea_atlas_base` (the preserved original di
 Ahmed Eladawy. Contact: ahmed.eladawy@jamstec.go.jp. SST: NASA/JPL GHRSST MUR v4.1 and NOAA OISST v2.1. Habitat inventories: UNEP-WCMC Ocean+ Habitats (coral 2021, seagrass 2021, mangroves 2010). Climate: NOAA CPC, PSL and NCEI ERSSTv5. Satellite imagery: Esri, Vantor, Earthstar Geographics and the GIS User Community. Coastline: Natural Earth public-domain land vectors. Leaflet 1.9.4, Plotly.js 2.35.2, jsPDF 4.2.1 and jsPDF-AutoTable 5.0.8 are vendored with their original license notices. Original data providers' use and attribution terms continue to apply. This repository contains sampled numerical habitat-cell values and rendered coverage maps, not the original habitat polygon datasets or cached satellite imagery.
 
 The photo collection includes Red Sea reefs, seagrass and Farasan mangroves; Arabian Gulf reefs, UAE and Qatar mangroves; real satellite views; and clearly labelled bleaching comparisons from other regions. Verified originals, responsive AVIF/WebP/JPEG previews, sources, photographers and licences are retained in [`dist/images/credits.json`](dist/images/credits.json) and [`PHOTO_AUDIT.md`](dist/images/PHOTO_AUDIT.md). Original photos are unedited. Their licences apply independently of the portal code. The viewer supports full native pixels, pan, download and keyboard navigation. Photos illustrate habitats and do not describe the selected pixel's condition.
+
+## Editing the research and news sections
+
+`dist/content/papers.json` contains 20 published-paper entries, paged ten at a time. Each entry has a DOI, publisher title, Arabic title, journal, year and topic (`regional`, `habitats`, `methods`, `forecast`). `dist/content/news.json` contains dated source links with reviewed English/Arabic titles and short summaries. Add or edit entries using the existing structure. No API key or runtime third-party photo embed is needed.
+
+After editing source modules locally, run in PowerShell:
+
+```powershell
+python scripts/build_assets.py
+python scripts/verify_assets.py
+python scripts/verify.py
+python scripts/verify_detail.py
+```
+
+Commit and push changes to `main`; GitHub Pages assembles and publishes them. The Monday 00:20 UTC job refreshes monthly climate feeds, genuine daily AO/NAO observations, seasonal probabilities and the NOAA ENSO bulletin date. Existing publisher metadata is checked every 90 days. New papers/news and their Arabic translations are curated entries. SST and MHW observation histories retain their documented end date (2025).
+
+## Interface upgrade
+
+See [UPGRADE_NOTES.md](UPGRADE_NOTES.md) for phases, measurements and verification. Editable source modules remain in `dist/`; `scripts/build_assets.py` assembles `language.js`, `interface.js` and `interface.css`. Original scientific files and `data/manifest.json` are preserved; `asset-manifest.json` covers presentation and dense-display assets separately. The browser uses the official self-hosted Plotly 2.35.2 Cartesian partial bundle with the existing Plotly licence. Daily SVG curves retain every observation. PDF libraries load on demand.

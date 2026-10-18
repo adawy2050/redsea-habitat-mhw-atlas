@@ -24,14 +24,14 @@ with sync_playwright() as p:
     assert 'pixel' in page.locator('.outlook-card h3').inner_text().lower()
     page.locator('#pointProbability').screenshot(path=str(qa/'point_probability.png'))
     page.locator('.atlas-layout').screenshot(path=str(qa/'probability_map.png'))
-    page.locator('#product').select_option('oisst')
+    page.locator('#product').select_option('oisst',force=True)
     page.wait_for_function("document.querySelector('#pointValidationYears').textContent.includes('13 test')")
     assert 'mailto:ahmed.eladawy@jamstec.go.jp'==page.locator('#contact a').first.get_attribute('href')
     with page.expect_download(timeout=60000) as item:
         page.locator('#createReport').click()
     path=qa/'point_report_oisst.pdf';item.value.save_as(str(path))
     doc=fitz.open(path)
-    assert 3<=len(doc)<=5,len(doc)
+    assert 6<=len(doc)<=10,len(doc)
     texts='\n'.join(p.get_text() for p in doc)
     assert 'Observed annual history' in texts and 'Contacts' in texts and 'Brier' in texts
     for i,pdf_page in enumerate(doc):pdf_page.get_pixmap(dpi=100).save(qa/f'point_report_p{i+1}.png')

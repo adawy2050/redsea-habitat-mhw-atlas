@@ -13,7 +13,7 @@ with sync_playwright() as p:
     errors, failures = [], []
     page.on('pageerror', lambda e: errors.append(str(e)))
     page.on('response', lambda r: failures.append([r.status,r.url]) if r.status >= 400 else None)
-    page.goto('http://127.0.0.1:8765/', wait_until='networkidle')
+    page.goto('http://127.0.0.1:8765/?basin=redsea', wait_until='networkidle')
     page.wait_for_function("document.documentElement.dataset.ready === 'true'", timeout=60000)
     page.screenshot(path=str(qa/'desktop.png'), full_page=True)
     assert page.locator('#pixelValue').inner_text() != '—'
@@ -21,11 +21,13 @@ with sync_playwright() as p:
     assert page.locator('.outlook-card').count() == 9
     assert '2026' in page.locator('#outlookSubtitle').inner_text()
     assert 'satellite' == page.locator('#basemap').input_value()
+    page.locator('#filtersOpen').click()
     page.locator('#showPixels').uncheck()
     page.locator('#pixelOpacity').fill('0.4')
     page.locator('input[name="coverage"][value="coral"]').uncheck()
     page.locator('input[name="coverage"][value="coral"]').check()
-    page.locator('#showPixels').check()
+    page.locator('#showPixels').check(force=True)
+    page.locator('#filtersClose').click()
     page.locator('#outlookRecord').select_option('OISST')
     assert page.locator('.outlook-card').count() == 9
     page.locator('.outlook-card details').first.locator('summary').click()
@@ -43,7 +45,7 @@ with sync_playwright() as p:
     with page.expect_download() as info:
         page.locator('#downloadPixel').click()
     info.value.save_as(str(qa/'selected_pixel.csv'))
-    page.locator('#product').select_option('oisst')
+    page.locator('#product').select_option('oisst',force=True)
     page.wait_for_function("window.AtlasDebug.state.product==='oisst' && document.querySelector('#modelSample').textContent.includes('44 complete years')")
     page.locator('#metric').select_option('mhw_cumulative_intensity')
     page.wait_for_timeout(1000)
@@ -75,7 +77,7 @@ with sync_playwright() as p:
     page.locator('#methodsOpen').click()
     assert page.locator('#methodsDialog').is_visible()
     page.keyboard.press('Escape')
-    page.locator('#product').select_option('mur')
+    page.locator('#product').select_option('mur',force=True)
     page.locator('#metric').select_option('mhw_days')
     page.locator('#lag').select_option('0')
     page.locator('#benchmark').select_option('trend')

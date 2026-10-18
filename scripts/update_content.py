@@ -30,7 +30,7 @@ def main():
     bulletin['date']=datetime.strptime(match[1],'%d %B %Y').date().isoformat()
     assert bulletin['date']<=today
     bulletin['checked']=today;news['checked']=today
-    (ROOT/'news.json').write_text(json.dumps(news,ensure_ascii=False,indent=2)+'\n',encoding='utf8')
+    (ROOT/'news.json').write_text(json.dumps(news,ensure_ascii=False,indent=2)+'\n',encoding='utf8',newline='\n')
     papers=json.loads((ROOT/'papers.json').read_text(encoding='utf8'))
     assert len({p['doi'].lower() for p in papers['items']})==len(papers['items'])
     for paper in papers['items']:
@@ -41,7 +41,7 @@ def main():
             assert metadata['title'][0].strip()==paper['title'].strip(), 'Publisher title changed; review its Arabic translation before updating.'
             paper['verified']=today
     papers['checked']=min(p['verified'] for p in papers['items'])
-    (ROOT/'papers.json').write_text(json.dumps(papers,ensure_ascii=False,indent=2)+'\n',encoding='utf8')
+    (ROOT/'papers.json').write_text(json.dumps(papers,ensure_ascii=False,indent=2)+'\n',encoding='utf8',newline='\n')
     print('Source catalogue checked; ENSO bulletin',bulletin['date'])
 
 

@@ -21,10 +21,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         with:
           python-version: '3.12'
-      - name: Refresh NOAA climate and seasonal probabilities
+      - name: Refresh NOAA observations and seasonal probabilities
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: |
           python -m pip install numpy pandas scipy
@@ -33,11 +32,18 @@ jobs:
           python scripts/update_content.py
           python scripts/verify.py
           python scripts/verify_detail.py
+      - name: Assemble and verify presentation assets
+        run: |
+          python scripts/build_assets.py
+          python scripts/verify_assets.py
+      - name: Save automatic refresh
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add dist/data dist/detail/climate_daily.json dist/content
+          git add dist/data dist/detail/climate_daily.json dist/content dist/interface.js dist/interface.css dist/language.js dist/asset-manifest.json
           if ! git diff --cached --quiet; then
-            git commit -m 'Refresh monthly climate feeds and seasonal outlook'
+            git commit -m 'Refresh climate observations, sources and seasonal outlook'
             git push
           fi
       - uses: actions/configure-pages@v5

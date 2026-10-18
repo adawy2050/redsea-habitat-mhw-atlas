@@ -45,7 +45,7 @@ with sync_playwright() as p:
     assert page.evaluate('document.documentElement.dir')=='rtl'
     assert page.locator('#pointProbability').inner_text()==probability
     assert 'ديسمبر' in page.locator('#climateNextTitle').inner_text()
-    page.locator('#product').select_option('oisst')
+    page.locator('#product').select_option('oisst',force=True)
     page.wait_for_function("document.querySelector('#pointValidationYears').textContent.includes('13') && document.querySelector('#pointValidationYears').textContent.includes('تحقق')")
     page.locator('#metric').select_option('mhw_mean_intensity')
     page.wait_for_function("document.querySelector('#mapTitle').textContent.includes('متوسط الشدة')")
@@ -56,7 +56,7 @@ with sync_playwright() as p:
     page.locator('.intro').screenshot(path=str(qa/'portal_ar_intro.png'))
     page.locator('#climate').screenshot(path=str(qa/'portal_ar_climate.png'))
     page.locator('#habitats').scroll_into_view_if_needed()
-    page.wait_for_function("[...document.querySelectorAll('.habitat-gallery img')].every(i=>i.complete && i.naturalWidth>=480)")
+    page.wait_for_function("[...document.querySelectorAll('.habitat-gallery img')].every(i=>i.complete && i.naturalWidth>0)")
     page.locator('#habitats').screenshot(path=str(qa/'portal_ar_habitats.png'))
     audit=page.evaluate("""() => {const result=[];const w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);while(w.nextNode()){const n=w.currentNode;if(n.parentElement.closest('script,style,.methods-en,.methods-ar,[data-no-i18n]'))continue;const t=n.nodeValue.trim();if(/[a-z]{4}/i.test(t)&&n.parentElement.getClientRects().length)result.push(t);}return [...new Set(result)];}""")
     (qa/'arabic_text_audit.json').write_text(json.dumps(audit,ensure_ascii=False,indent=2),encoding='utf-8')

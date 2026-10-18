@@ -89,3 +89,11 @@ The top switch changes between English and Arabic, preserving the selected pixel
 ## Packaging
 
 Scientific display data, coastline geometry, fonts (system fonts), Leaflet, Plotly, jsPDF and AutoTable libraries are local static assets. Satellite imagery is a viewport-only external map service. There is no analytics tracking, database, credential or browser-side climate API request. The build/update scripts record checksums. The repository excludes the all-ocean daily SST archives, complete all-pixel event catalogue, original habitat polygons and cached satellite images.
+
+## Additional display records and conditional extensions
+
+The daily panel uses original daily OISST files at all 483 native cells attached to retained habitats, with 16,071 Gregorian dates during 1982–2025. Daily temperatures use little-endian int16 hundredths of a degree, matching source precision; missing values use -32768. Their annual means reproduce existing annual SST within 0.0001 °C. Monthly MHW days come from the existing native event-day extraction and reproduce every annual source-cell total exactly. Daily SST retains leap days; event detection retains the study no-leap calendar.
+
+Daily AO/NAO curves retain genuine NOAA CDAS daily products and original normalisations. They are display-only, not interpolated monthly values or replacement model predictors. In a standardised monthly climate view, daily curves use the displayed monthly series mean and standard deviation. CSV files retain original daily values. Dates and source URLs accompany the separate `detail/` records.
+
+Optional 2026–2027 annual curves apply the existing pixel regression and selected index lead. Complete archived annual climate means are used where available; current-year means use available months. Unavailable future inputs are held at the latest available means. If annual SST is selected it is held at the last observed analysis-year value. These conditional scenarios contain no observed 2026–2027 MHW values and are separate from the dated seasonal probability estimate. Scenario CSV/PDF tables record the input year, mean and available-month count. Original regression fits, statistics and seasonal probabilities are unchanged.

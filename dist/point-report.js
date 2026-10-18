@@ -3,7 +3,10 @@
   const ascii=s=>String(s).replace(/[–—−]/g,'-').replace(/°/g,' deg').replace(/σ/g,'SD');
   const num=(v,d=1)=>v===null||!Number.isFinite(v)?'-':Number(v).toFixed(d);
   const pct=v=>`${num(v*100,1)}%`;
+  let dependencies;
+  async function loadDependencies(){if(window.jspdf?.jsPDF?.API?.autoTable)return;if(!dependencies)dependencies=(async()=>{for(const path of ['./vendor/jspdf.umd.min.js','./vendor/jspdf-autotable.min.js'])await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=new URL(path,document.baseURI).href;script.onload=resolve;script.onerror=()=>reject(Error('PDF dependency unavailable'));document.head.append(script);});})().catch(e=>{dependencies=null;throw e;});return dependencies;}
   async function create(r){
+    await loadDependencies();
     const {jsPDF}=window.jspdf,doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
     const ink=[23,33,46],blue=[23,79,134],grey=[85,101,117],W=180,X=15;
     const title=(name,sub)=>{doc.setFont('helvetica','bold');doc.setFontSize(17);doc.setTextColor(...ink);doc.text(ascii(name),X,21);doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(...grey);doc.text(doc.splitTextToSize(ascii(sub),W),X,28);};
@@ -26,7 +29,7 @@
       y=para('This model uses the point history itself. Brier skill is relative to a historical-probability baseline; negative values indicate worse held-out performance. Probabilities are research estimates, not operational alert levels.',y,8);
     }else y=para('A current seasonal estimate is waiting for the required climate observations.',y);
     y=heading(`Annual ${r.metricInfo.name.toLowerCase()}`,y);
-    const scratch=document.createElement('div');scratch.style.cssText='position:fixed;left:-10000px;top:0;width:1100px;height:390px';document.body.append(scratch);
+    const scratch=document.createElement('div');scratch.dataset.reportChart='true';scratch.style.cssText='position:fixed;left:-10000px;top:0;width:1100px;height:390px';document.body.append(scratch);
     let image;
     const traces=[{x:r.product.years,y:r.histories[r.metric],name:'Observed',mode:'lines+markers',type:'scatter',line:{color:'#1768ac',width:2},marker:{size:4}}];
     const valid=r.histories[r.metric].map((v,i)=>Number.isFinite(v)?i:-1).filter(i=>i>=0);
@@ -55,7 +58,7 @@
       y=table(['Predictor','Share of total variance','Coefficient per predictor SD'],a.names.map((name,j)=>[name,pct(a.model.shares[j]),num(a.model.beta[j],3)]),y,{styles:{fontSize:7,cellPadding:1.5}});
     }
     async function extraChart(traces,options={}){
-      const el=document.createElement('div');el.style.cssText='position:fixed;left:-10000px;top:0;width:1100px;height:400px';document.body.append(el);
+      const el=document.createElement('div');el.dataset.reportChart='true';el.style.cssText='position:fixed;left:-10000px;top:0;width:1100px;height:400px';document.body.append(el);
       try{await Plotly.newPlot(el,traces,{width:1100,height:400,paper_bgcolor:'#fff',plot_bgcolor:'#fff',margin:{l:65,r:65,t:40,b:45},legend:{orientation:'h',y:1.15,font:{size:12}},font:{size:12,color:'#34465b'},...options},{staticPlot:true,displayModeBar:false});return await Plotly.toImage(el,{format:'png',width:1100,height:400,scale:1.4});}finally{Plotly.purge(el);el.remove();}
     }
     if(r.detail){
@@ -74,6 +77,14 @@
       y=table(['Index','Latest monthly observation','Value','Current-year months'],r.liveClimate.modes.map(mode=>{let k=monthly.values[mode].length-1;while(k>=0&&!Number.isFinite(monthly.values[mode][k]))k--;return [mode,monthly.dates[k].slice(0,7),num(monthly.values[mode][k],3),monthly.values[mode].filter((v,i)=>monthly.dates[i].startsWith(r.liveClimate.asOf.slice(0,4))&&Number.isFinite(v)).length];}),y,{styles:{fontSize:7.5,cellPadding:1.5}});
       y=para('Faint daily AO/NAO are genuine NOAA daily products. The monthly record and original normalisations are retained; daily observations are display-only and do not replace the model predictors.',y,8);
       if(r.scenarios?.length){y=heading('Conditional annual model values',y);y=table(['Year','Conditional metric value','Climate input year'],r.scenarios.map(v=>[v.year,num(v.value,2),v.climateYear]),y);y=para('These dotted annual extensions are conditional scenarios, separate from the next-season probability model. Current-year index means use only available months; future indices and annual SST, when used, are held at their latest available values. They are not observed MHW values.',y,8);}
+    }
+    if(r.association){
+      doc.addPage();title('Observed, fitted and conditional annual curves',`${coordinate} | ${r.product.name} | ${r.metricInfo.name}`);y=40;
+      const a=r.association,ys=a.rows.map(v=>v.year),traces=[{x:ys,y:a.rows.map(v=>v.observed),name:'Observed',mode:'lines+markers',line:{color:'#245e88',width:2},marker:{size:4}},{x:ys,y:a.base.pred,name:a.names[0],mode:'lines',line:{color:'#90977d',dash:'dot',width:1.5}},{x:ys,y:a.model.pred,name:'Combined annual model',mode:'lines',line:{color:'#34465b',dash:'dot',width:2}}];
+      if(r.scenarios?.length)traces.push({x:[ys.at(-1),...r.scenarios.map(v=>v.year)],y:[a.model.pred.at(-1),...r.scenarios.map(v=>v.value)],name:'Conditional annual extension',mode:'lines+markers',line:{color:'#b15b35',dash:'dot',width:2}});
+      const plot=await extraChart(traces,{xaxis:{tickformat:'d'},yaxis:{title:r.metricInfo.unit}});doc.addImage(plot,'PNG',X,y,W,78);y+=85;
+      y=para('Solid: observations. Dotted: model fit, reference-only fit and conditional extension. The extension holds unavailable future predictors at their latest available values; it is separate from the seasonal exposure probability forecast.',y,8);
+      if(r.scenarios?.length)y=table(['Index','2026 input year','Available months','Mean index input'],r.scenarios[0].inputs.map(i=>[i.mode,i.year,i.months,num(i.value,3)]),y,{styles:{fontSize:7.5,cellPadding:1.6}});
     }
     if(y>190){doc.addPage();title('Sources, methods and contacts',coordinate);y=42;}
     y=heading('Sources and interpretation',y);
