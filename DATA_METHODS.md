@@ -42,6 +42,26 @@ Fitted R² describes the full selected record. Leave-one-year-out R² uses PRESS
 
 For the paired plot, both annual series use the same complete years. Optional detrending independently removes a linear time trend from each series before Pearson correlation and standardisation. This option does not alter the multivariate model. No map-level significance tests or habitat-specific causal attribution are claimed by this interface.
 
+## Live seasonal estimates and climate updates
+
+The study archive through 2025 is frozen. NOAA monthly observations from 2026 onward are appended to a separate feed. Each index retains its own latest available month. Missing months remain missing; daily AO is aggregated only for complete calendar months. Future calendar months and the incomplete current month are excluded. The IOD/HadISST archive currently lags the other six feeds. Its delayed values are not filled or spliced from another SST product.
+
+The live seasonal panel is therefore fixed in advance to the six other indices: Niño-3.4, NAO, AO, EAWR, North Atlantic SST anomaly and PDO. It is not chosen by the best forecast result. The seven-index annual pixel model remains unchanged. The six-index seasonal model receives its own matched chronological backtest, rather than reusing seven-index validation scores.
+
+At the current issue month, the next DJF, MAM, JJA or SON season whose start is 1–3 months ahead is selected. Index predictors are three-month means ending two calendar months before the issue month, matching the manuscript publication-lag convention. Output shows the actual computation date and the reference issue month separately. The MHW history remains through December 2025; no 2026 heatwave histories are inferred or invented.
+
+For each habitat × ecoregion × SST product, the outcome is the mean MHW days across its corrected habitat records over the three-month target season. A high-exposure season exceeds the past same-season 80th percentile, with a minimum threshold of ten days. The live model fits an intercept and six climate predictors by ridge logistic regression. Index linear trends are estimated and removed in the training window, and residual predictors are standardised using that window alone. There are no unavailable recent-MHW or previous-season-history inputs in this indices-only model.
+
+Regularisation is selected from 0.1, 1, 10 and 100 by expanding earlier-season validation. The matching outer backtest starts after twelve training seasons, refits at each origin, and recomputes thresholds, detrending, standardisation and inner regularisation using only earlier seasons. The reference probability is the smoothed fraction of high-exposure training seasons. Brier skill is `1 - mean((observed - model_probability)^2) / mean((observed - baseline_probability)^2)` on the same years. The interface reports post-baseline-availability validation (MUR from February 2023; OISST from February 2012) and exposes the longer retrospective result in details. The short MUR post-baseline record does not establish reliable alerts. No six-index probability is labelled an operational warning; numerical probabilities, dates and backtest performance are shown directly.
+
+The Monday 00:20 UTC GitHub Actions refresh downloads current archives, validates parsing and predictor availability, refits these estimates and deploys the updated JSON. A failed download/fit does not push a partial result. Original arrays, study-period indices and manuscript files are not modified. Monthly NOAA archives are current versions, rather than an archive of the exact source vintages originally published at every historical issue date.
+
+## Satellite imagery and habitat coverage
+
+Esri World Imagery is loaded only for the visitor's current map viewport. Required imagery credits appear on the map and exported map image. It is a reference mosaic with varying acquisition dates, not an annual satellite image for the chosen heatwave year. The Natural Earth coastline option remains available independently.
+
+Transparent raster coverage maps show the study's UNEP-WCMC coral (2021), seagrass (2021) and mangrove (2010) inventories. They are rendered from the local study GeoPackage into Web Mercator map tiles at zooms 4–12, with no GIS geometries or source attributes exported. Original polygon inventories should be obtained from the providers. These coverage maps are context layers; analysis still uses only the 49,408 retained habitat grid cells and their corrected SST attachments. See the [UNEP-WCMC general data licence](https://www.unep-wcmc.org/en/general-data-license).
+
 ## Packaging
 
-All display data, coastline geometry, fonts (system fonts), Leaflet and Plotly libraries are local static assets. There is no runtime analytics tracking, remote tile dependency, database, credential or external climate query. The build script records input and output checksums. The repository's source data package contains only retained habitat/source cells; it excludes the all-ocean daily SST archives and complete all-pixel event catalogue.
+Scientific display data, coastline geometry, fonts (system fonts), Leaflet and Plotly libraries are local static assets. Satellite imagery is a viewport-only external map service. There is no analytics tracking, database, credential or browser-side climate API request. The build/update scripts record checksums. The repository excludes the all-ocean daily SST archives, complete all-pixel event catalogue, original habitat polygons and cached satellite images.

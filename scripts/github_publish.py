@@ -91,7 +91,7 @@ def main():
     remote=git('remote','get-url','origin').stdout.strip()
     if remote!=repo['clone_url']:
         raise SystemExit('Existing local remote differs from target repository; publication stopped.')
-    git('add','dist','scripts','.github','.gitignore','README.md','DATA_METHODS.md','preview.ps1')
+    git('add','dist','scripts','.github','.gitignore','.gitattributes','README.md','DATA_METHODS.md','preview.ps1')
     changes=git('diff','--cached','--quiet',check=False)
     if changes.returncode:
         git('commit','-m','Build interactive habitat-pixel heatwave atlas with validated study data')
@@ -116,6 +116,7 @@ def main():
                 if status[1]=='success':
                     pages=api('GET',repo_path+'/pages')
                     result={'repository':repo['html_url'],'url':pages['html_url'],'workflow':run['html_url'],'status':'deployed'}
+                    (ROOT/'qa').mkdir(exist_ok=True)
                     (ROOT/'qa/deployment.json').write_text(json.dumps(result,indent=2))
                     print('DEPLOYED',result['url'],flush=True)
                     return

@@ -18,6 +18,21 @@ with sync_playwright() as p:
     page.screenshot(path=str(qa/'desktop.png'), full_page=True)
     assert page.locator('#pixelValue').inner_text() != '—'
     assert page.locator('#modelR2').inner_text() != '—'
+    assert page.locator('.outlook-card').count() == 9
+    assert '2026' in page.locator('#outlookSubtitle').inner_text()
+    assert 'satellite' == page.locator('#basemap').input_value()
+    page.locator('#showPixels').uncheck()
+    page.locator('#pixelOpacity').fill('0.4')
+    page.locator('input[name="coverage"][value="coral"]').uncheck()
+    page.locator('input[name="coverage"][value="coral"]').check()
+    page.locator('#showPixels').check()
+    page.locator('#outlookRecord').select_option('OISST')
+    assert page.locator('.outlook-card').count() == 9
+    page.locator('.outlook-card details').first.locator('summary').click()
+    page.locator('#outlook').screenshot(path=str(qa/'outlook.png'))
+    with page.expect_download() as info:
+        page.locator('#downloadOutlook').click()
+    info.value.save_as(str(qa/'outlook_download.json'))
     initial = page.locator('#pixelTitle').inner_text()
     page.locator('#pinPixel').click()
     page.locator('#locate').fill('15.8, 41.5')
@@ -46,6 +61,7 @@ with sync_playwright() as p:
     page.locator('#pairedIndex').select_option('localSst')
     page.wait_for_timeout(250)
     assert 'OISST' in page.locator('#pairedTitle').inner_text()
+    page.locator('#climateSource').select_option('study')
     page.locator('#climateStep').select_option('monthly')
     page.locator('#climateScale').select_option('raw')
     for checkbox in page.locator('#indexChips input').all():

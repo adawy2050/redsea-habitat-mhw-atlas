@@ -31,4 +31,15 @@ for name, record in manifest['files'].items():
     assert hashlib.sha256(p.read_bytes()).hexdigest() == record['sha256']
 assert (root / 'vendor/leaflet.js').stat().st_size > 100000
 assert (root / 'vendor/plotly.min.js').stat().st_size > 1000000
+coverage=json.loads((root/'coverage/index.json').read_text())
+coverage_count=0
+for habitat,keys in coverage['tiles'].items():
+    assert habitat in meta['habitats'] and len(keys)==len(set(keys))
+    for key in keys:
+        path=root/'coverage'/habitat/(key+'.png')
+        with path.open('rb') as file:
+            assert file.read(8)==b'\x89PNG\r\n\x1a\n'
+        coverage_count+=1
+assert coverage_count==5864
 print(f"PASS: {len(pixels):,} unique habitat cells; 108 summary checks; native-array dimensions, missing values, indices and asset checksums.")
+print(f'PASS: {coverage_count:,} rendered habitat coverage tiles match the map index.')
