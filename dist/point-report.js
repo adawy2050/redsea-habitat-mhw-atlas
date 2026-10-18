@@ -6,6 +6,8 @@
   let dependencies;
   async function loadDependencies(){if(window.jspdf?.jsPDF?.API?.autoTable)return;if(!dependencies)dependencies=(async()=>{for(const path of ['./vendor/jspdf.umd.min.js','./vendor/jspdf-autotable.min.js'])await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=new URL(path,document.baseURI).href;script.onload=resolve;script.onerror=()=>reject(Error('PDF dependency unavailable'));document.head.append(script);});})().catch(e=>{dependencies=null;throw e;});return dependencies;}
   async function create(r){
+    window.AtlasReportRendering=true;
+    try{
     await loadDependencies();
     const {jsPDF}=window.jspdf,doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
     const ink=[23,33,46],blue=[23,79,134],grey=[85,101,117],W=180,X=15;
@@ -94,6 +96,7 @@
     const pages=doc.getNumberOfPages();for(let page=1;page<=pages;page++){doc.setPage(page);doc.setDrawColor(215,222,230);doc.line(X,282,195,282);doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(...grey);doc.text('Red Sea & Arabian Gulf Habitat Heatwave Atlas | Ahmed Eladawy',X,287);doc.text(`${page} / ${pages}`,195,287,{align:'right'});}
     doc.setProperties({title:`MHW point report: ${coordinate}`,author:'Ahmed Eladawy',subject:'Habitat-cell history, seasonal probabilities and chronological validation'});
     doc.save(`MHW_${r.latitude.toFixed(2)}N_${r.longitude.toFixed(2)}E_${r.product.name.replaceAll(' ','_')}_report.pdf`);
+    }finally{window.AtlasReportRendering=false;window.dispatchEvent(new Event('atlasreportcomplete'));}
   }
   window.AtlasReports={create};
 })();

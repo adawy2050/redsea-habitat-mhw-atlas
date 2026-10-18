@@ -519,6 +519,8 @@
   let dependencies;
   async function loadDependencies(){if(window.jspdf?.jsPDF?.API?.autoTable)return;if(!dependencies)dependencies=(async()=>{for(const path of ['./vendor/jspdf.umd.min.js','./vendor/jspdf-autotable.min.js'])await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=new URL(path,document.baseURI).href;script.onload=resolve;script.onerror=()=>reject(Error('PDF dependency unavailable'));document.head.append(script);});})().catch(e=>{dependencies=null;throw e;});return dependencies;}
   async function create(r){
+    window.AtlasReportRendering=true;
+    try{
     await loadDependencies();
     const {jsPDF}=window.jspdf,doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
     const ink=[23,33,46],blue=[23,79,134],grey=[85,101,117],W=180,X=15;
@@ -607,6 +609,7 @@
     const pages=doc.getNumberOfPages();for(let page=1;page<=pages;page++){doc.setPage(page);doc.setDrawColor(215,222,230);doc.line(X,282,195,282);doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(...grey);doc.text('Red Sea & Arabian Gulf Habitat Heatwave Atlas | Ahmed Eladawy',X,287);doc.text(`${page} / ${pages}`,195,287,{align:'right'});}
     doc.setProperties({title:`MHW point report: ${coordinate}`,author:'Ahmed Eladawy',subject:'Habitat-cell history, seasonal probabilities and chronological validation'});
     doc.save(`MHW_${r.latitude.toFixed(2)}N_${r.longitude.toFixed(2)}E_${r.product.name.replaceAll(' ','_')}_report.pdf`);
+    }finally{window.AtlasReportRendering=false;window.dispatchEvent(new Event('atlasreportcomplete'));}
   }
   window.AtlasReports={create};
 })();
@@ -773,7 +776,7 @@
   motionButton.onclick=()=>{motion=!motion;applyMotion();};reduce.addEventListener('change',applyMotion);
   const originalLines=new WeakMap();
   function palette(plot){if(plot._paletteBusy)return;const dark=theme==='dark',map={'#253444':'#d8e3e8','#34465b':'#d8e3e8','#1768ac':'#8bc7e9','#245e88':'#8bc7e9','#8e9e8c':'#c6c3a9','#b15b35':'#e4ae83'},colours=(plot.data||[]).map(trace=>{if(!originalLines.has(trace))originalLines.set(trace,trace.line?.color);const original=originalLines.get(trace);return dark?(map[original]||original):original;});if(!colours.some((color,i)=>color&&plot.data[i].line?.color!==color))return;plot._paletteBusy=true;Plotly.restyle(plot,{'line.color':colours}).finally(()=>plot._paletteBusy=false);}
-  function chartTheme(plot){if(plot.dataset.reportChart)return;if(!plot.layout||!plot._fullLayout)return;palette(plot);const dark=theme==='dark',fg=dark?'#cad8de':'#50616a',grid=dark?'#334550':'#d9d5ca',family=AtlasLanguage.current==='ar'?'Noto Sans Arabic, sans-serif':'Inter, sans-serif';if(plot.layout.font?.color===fg&&plot.layout.font?.family===family)return;Plotly.relayout(plot,{'font.color':fg,'font.family':family,'xaxis.gridcolor':grid,'yaxis.gridcolor':grid,'xaxis.zerolinecolor':grid,'yaxis.zerolinecolor':grid,'hoverlabel.bgcolor':dark?'#1a303e':'#fffdf7','hoverlabel.font.color':dark?'#f7f0df':'#233d4c','hoverlabel.bordercolor':grid,'legend.font.color':fg});}
+  function chartTheme(plot){if(window.AtlasReportRendering||plot.dataset.reportChart)return;if(!plot.layout||!plot._fullLayout)return;palette(plot);const dark=theme==='dark',fg=dark?'#cad8de':'#50616a',grid=dark?'#334550':'#d9d5ca',family=AtlasLanguage.current==='ar'?'Noto Sans Arabic, sans-serif':'Inter, sans-serif';if(plot.layout.font?.color===fg&&plot.layout.font?.family===family)return;Plotly.relayout(plot,{'font.color':fg,'font.family':family,'xaxis.gridcolor':grid,'yaxis.gridcolor':grid,'xaxis.zerolinecolor':grid,'yaxis.zerolinecolor':grid,'hoverlabel.bgcolor':dark?'#1a303e':'#fffdf7','hoverlabel.font.color':dark?'#f7f0df':'#233d4c','hoverlabel.bordercolor':grid,'legend.font.color':fg});}
   function charts(){for(const plot of document.querySelectorAll('.js-plotly-plot')){if(!plot.on)continue;if(!plot.dataset.themeBound){plot.dataset.themeBound='true';plot.on('plotly_afterplot',()=>chartTheme(plot));}chartTheme(plot);}}
   const observer=new MutationObserver(()=>{if(observer.queued)return;observer.queued=true;requestAnimationFrame(()=>{observer.queued=false;icons();charts();});});observer.observe(document.body,{subtree:true,childList:true});
   const reveal=new IntersectionObserver(entries=>{for(const entry of entries)if(entry.isIntersecting){entry.target.classList.add('revealed');reveal.unobserve(entry.target);}},{threshold:.08});for(const el of document.querySelectorAll('.analysis-section .chart-card,.resources-section,.habitat-gallery')){el.classList.add('reveal-panel');reveal.observe(el);}
@@ -785,5 +788,6 @@
   let scrollPending=false;window.addEventListener('scroll',()=>{if(scrollPending||root.dataset.motion!=='on')return;scrollPending=true;requestAnimationFrame(()=>{scrollPending=false;const hero=document.querySelector('.photo-intro'),box=hero.getBoundingClientRect();if(box.bottom>0&&box.top<innerHeight)hero.style.setProperty('--parallax',`${Math.max(-12,Math.min(12,-box.top*.025))}px`);});},{passive:true});
   let mapFade;window.addEventListener('atlasmapyearchange',()=>{if(root.dataset.motion!=='on')return;const canvas=document.querySelector('.habitat-canvas');if(!canvas)return;mapFade?.cancel();mapFade=canvas.animate([{opacity:.62},{opacity:1}],{duration:230,easing:'ease-out'});});
   window.addEventListener('atlasready',()=>{icons();charts();photographicStory();});window.addEventListener('atlaslanguagechange',()=>{applyTheme();applyMotion();const location=document.querySelector('[data-location]'),p=AtlasPhotos?.photos.find(p=>p.id==='bleaching-great-barrier');if(location&&p){location.textContent=AtlasLanguage.current==='ar'?p.locationAr:p.location;const image=document.querySelector('.habitat-story img');if(image)image.alt=AtlasLanguage.current==='ar'?p.titleAr+' · '+p.locationAr:p.title+' · '+p.location;}});
+  window.addEventListener('atlasreportcomplete',charts);
   applyTheme();applyMotion();icons();
 })();

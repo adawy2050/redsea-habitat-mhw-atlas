@@ -49,10 +49,11 @@
     const url=new URL(location.href);url.searchParams.set('lang',language);history.replaceState(null,'',url);apply();window.dispatchEvent(new Event('resize'));window.dispatchEvent(new Event('atlaslanguagechange'));
   }
   let queued=false;
-  observer=new MutationObserver(()=>{if(language==='en'||queued)return;queued=true;requestAnimationFrame(()=>{queued=false;apply();});});
+  observer=new MutationObserver(()=>{if(window.AtlasReportRendering||language==='en'||queued)return;queued=true;requestAnimationFrame(()=>{queued=false;apply();});});
   document.querySelectorAll('[data-language]').forEach(button=>button.addEventListener('click',()=>setLanguage(button.dataset.language)));
   let preferred=new URLSearchParams(location.search).get('lang');try{preferred??=localStorage.getItem('atlas-language');}catch{}
   setLanguage(preferred||'en');
+  window.addEventListener('atlasreportcomplete',()=>apply());
   window.AtlasLanguage={set:setLanguage,get current(){return language;},translate,add(entries){Object.assign(dictionary,entries);rules.splice(0,rules.length,...Object.entries({...dictionary,...fragments}).sort((a,b)=>b[0].length-a[0].length));apply();}};
 })();
 
