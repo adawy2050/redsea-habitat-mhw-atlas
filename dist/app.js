@@ -373,9 +373,18 @@
       if(meta.basins.some(b=>b.id===params.get('basin')))state.basin=params.get('basin');$('basin').value=state.basin;regionControls();
       state.pixel=params.has('lat')&&params.has('lon')?nearest(Number(params.get('lat')),Number(params.get('lon'))):nearest(21.4,39.05);
       if(!visible(pixels[state.pixel]))state.pixel=pixels.findIndex(visible);
-      forecastAvailability();makeMap(land);setYearControls();bind();$('climateSource').value='latest';$('climateStep').value='monthly';climateDateControls();renderLatestIndices();await renderMap();renderClimate();renderOutlook();document.documentElement.dataset.ready='true';
+      forecastAvailability();makeMap(land);setYearControls();bind();$('climateSource').value='latest';$('climateStep').value='monthly';climateDateControls();renderLatestIndices();await renderMap();renderClimate();renderOutlook();document.documentElement.dataset.ready='true';window.dispatchEvent(new Event('atlasready'));
     }catch(e){console.error(e);$('loadingText').textContent=`Atlas could not open: ${e.message}. Please reload.`;document.documentElement.dataset.error=e.message;}
   }
+  window.AtlasUI={
+    async visit(step){
+      state.basin=step.basin;state.region='all';state.habitats=7;state.product='mur';state.metric='mhw_days';state.mapMode=step.forecast?'probability':'history';
+      $('basin').value=state.basin;$('product').value=state.product;$('metric').value=step.forecast?'outlook_probability':state.metric;document.querySelectorAll('input[name="habitat"]').forEach(e=>e.checked=true);regionControls();setYearControls();state.year=2025;$('year').value=state.year;
+      const i=nearest(step.lat,step.lon,true);state.pixel=i;await renderMap();selectPixel(i);const point=pixels[i];map.flyTo([point[1],point[0]],8,{animate:!matchMedia('(prefers-reduced-motion: reduce)').matches,duration:.8});
+      if(step.forecast){state.outlookScope='pixel';$('outlookScope').value='pixel';await renderOutlook();const f=await pointForecast(state.product,i);return {en:`At ${coordinate(i)}, the ${f.season} high-exposure probability is ${percent(f.probability)}, compared with a historical ${percent(f.baseline)}. Brier skill: ${number(f.skill,2)}; ${f.nTest} test seasons.`,ar:`عند ${coordinate(i)}، احتمال ارتفاع التعرض في ${f.season} هو ${percent(f.probability)}، مقابل احتمال تاريخي ${percent(f.baseline)}. مهارة براير ${number(f.skill,2)} خلال ${f.nTest} مواسم تحقق.`};}
+      const a=await array('mur','mhw_days'),v=series(i,a),years=meta.products.mur.years,trend=S.trend(years,v);return {en:`This ${meta.regions[point[3]]} cell recorded ${number(v[0],0)} heatwave days in ${years[0]} and ${number(v.at(-1),0)} in ${years.at(-1)}. Its full-record linear change is ${signed(trend,1)} days per decade.`,ar:`سجلت هذه الخلية ${number(v[0],0)} يومًا من الموجات الحارة في ${years[0]} و${number(v.at(-1),0)} يومًا في ${years.at(-1)}. التغير الخطي خلال السجل ${signed(trend,1)} يوم لكل عقد.`};
+    }
+  };
   window.AtlasDebug={state,get meta(){return meta;},get pixels(){return pixels;},get model(){return modelData;},get outlook(){return outlook;},get map(){return map;}};
   init();
 })();

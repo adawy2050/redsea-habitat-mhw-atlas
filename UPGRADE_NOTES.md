@@ -16,3 +16,9 @@ Validation: verify.py and test_stats.cjs passed; browser checks passed for EN/AR
 ## Before phase 2 — guided tour
 
 The map and charts still use the existing app state. A small explicit UI bridge will expose selection and metric/year controls without changing statistical routines. The tour will compute its statements from the selected cell arrays and existing forecast output; route state will use `tour=`.
+
+Phase 2 completed: six shareable steps select real cells across all five ecoregions and the next-season outlook. Annual statements are calculated from existing native MUR arrays; the final step reads current cell probability, baseline and Brier skill. The persistent tour can exit at any step. Browser checks passed for all six Arabic steps and URL/selection state.
+
+## Before phase 3 — linked exploration and dense records
+
+The canvas layer already draws only visible map bounds. The UI bridge can reuse arrays, selected cell and map without duplicating state. Dense histories will be separate, lazy per-cell daily OISST records and original event-day monthly counts; existing annual arrays/models stay untouched. Daily climate observations will be supplied only for indices with genuine daily source products, not interpolated monthly data. Existing output covers the DJF season through February 2027; other future annual values require explicit assumptions.
