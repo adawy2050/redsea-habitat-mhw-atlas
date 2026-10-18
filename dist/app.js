@@ -171,7 +171,7 @@
     $('sourceCell').textContent=`${source[1].toFixed(product==='mur'?2:3)}°N, ${source[0].toFixed(product==='mur'?2:3)}°E · ${native.name}`;
     $('attachmentNote').textContent=`${number(p[product==='mur'?6:7],2)} km from habitat centre. ${product==='oisst'?'A shared 0.25° SST cell.':'Nearest valid 0.01° marine cell.'}`;
     Plotly.react('sparkline',[{x:native.years,y:values,type:'scatter',mode:'lines',line:{color:'#1768ac',width:1.5},fill:'tozeroy',fillcolor:'#d9e8f580',hovertemplate:'%{x}: %{y:.2f}<extra></extra>'}],{margin:{l:0,r:0,t:5,b:0},paper_bgcolor:'transparent',plot_bgcolor:'transparent',showlegend:false,xaxis:{visible:false},yaxis:{visible:false},font:{size:9}},{displayModeBar:false,responsive:true});
-    await Promise.all([renderHistory(),renderModel(),renderPointOutlook()]);if(state.outlookScope==='pixel')renderOutlook();
+    window.dispatchEvent(new CustomEvent('atlaspixelchange',{detail:{basin:pointBasin(p).id,habitats:p[2]}}));await Promise.all([renderHistory(),renderModel(),renderPointOutlook()]);if(state.outlookScope==='pixel')renderOutlook();
   }
   async function renderHistory() {
     const product=state.product,metric=state.metric,a=await array(product,metric);if(product!==state.product||metric!==state.metric)return;

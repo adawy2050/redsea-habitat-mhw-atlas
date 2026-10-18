@@ -59,14 +59,20 @@ assert (root / 'vendor/leaflet.js').stat().st_size > 100000
 assert (root / 'vendor/plotly.min.js').stat().st_size > 1000000
 assert (root / 'vendor/jspdf.umd.min.js').stat().st_size > 300000
 assert (root / 'vendor/jspdf-autotable.min.js').stat().st_size > 20000
-photos=json.loads((root/'images/credits.json').read_text())
-assert len(photos)==3 and len({p['file'] for p in photos})==3
+photos=json.loads((root/'images/credits.json').read_text(encoding='utf8'))
+assert len(photos)>=12 and len({p['file'] for p in photos})==len(photos)
+assert {'redsea','gulf','representative'} <= {p['basin'] for p in photos}
 for photo in photos:
     image=root/'images'/photo['file']
     assert image.stat().st_size>200000 and image.read_bytes().startswith(b'\xff\xd8')
-    assert min(photo['width'],photo['height'])>=1500
+    assert max(photo['width'],photo['height'])>=3000
+    assert hashlib.sha256(image.read_bytes()).hexdigest()==photo['sha256']
+    for width in (480,960,1600,2400):
+        for ext in ('avif','webp','jpg'):
+            assert (root/'images/responsive'/f"{photo['id']}-{width}.{ext}").is_file()
     assert photo['source'].startswith('https://commons.wikimedia.org/wiki/')
-    assert photo['licenseUrl'].startswith('https://creativecommons.org/licenses/')
+    assert photo['license'].startswith(('CC BY','CC0','Public domain'))
+    assert photo['licenseUrl'].startswith(('https://creativecommons.org/','https://commons.wikimedia.org/wiki/Template:PD-'))
 coverage=json.loads((root/'coverage/index.json').read_text())
 coverage_count=0
 for habitat,keys in coverage['tiles'].items():
@@ -80,4 +86,4 @@ assert coverage_count>=5864
 print(f"PASS: {len(pixels):,} unique habitat cells; 108 summary checks; native-array dimensions, missing values, indices and asset checksums.")
 print(f'PASS: {coverage_count:,} rendered habitat coverage tiles match the map index.')
 print('PASS: native seasonal histories, current pixel probabilities, coefficients and chronological backtest arrays.')
-print('PASS: three original-resolution habitat photographs with source and open-licence metadata.')
+print(f'PASS: {len(photos)} original-resolution photographs, SHA-256 hashes, responsive derivatives and licence metadata.')
