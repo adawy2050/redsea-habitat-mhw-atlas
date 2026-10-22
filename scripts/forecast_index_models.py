@@ -31,6 +31,7 @@ def certified_2025(product,info):
         a=np.fromfile(ROOT/f'dist/detail/monthly/{product}_{start//width}.u8',dtype='u1').reshape(-1,len(p['dates']))
         dec[start:start+len(a)]=a[:,december]
     tail=np.frombuffer(gzip.decompress((ROOT/'dist/observed2026'/product/ix['previousDecemberTailAdditionalDaysFile']).read_bytes()),dtype='u1');assert len(tail)==len(dec) and tail.max()<=6
+    assert np.all(dec+tail<=31),'Confirmed December membership exceeds the calendar month; review the boundary inputs.'
     return dec+tail+months[:,:2].sum(axis=1)
 
 def refit(years,x,y,fyear,fx,alphas):

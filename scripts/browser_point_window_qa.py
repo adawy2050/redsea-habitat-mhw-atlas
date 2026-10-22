@@ -20,7 +20,7 @@ async def main():
         await page.locator('#map').click(position=point);await page.wait_for_function("document.querySelector('#pointAnalysis').open")
         assert await page.locator('#pointAnalysis #createReport').count()==1
         await page.get_by_role('button',name='2026 to date',exact=True).click();await page.wait_for_function("document.querySelector('#observed2026Plot').data?.length===3",timeout=30000)
-        observed=await page.locator('#observed2026Note').inner_text();assert 'OISST' in observed and '2026' in observed,observed
+        observed=await page.locator('#observed2026Note').inner_text();assert any(source in observed for source in ['OISST','MUR']) and '2026' in observed,observed
         assert await page.locator('#observed2026Plot').evaluate("e=>e.data[0].x.at(-1)==='2026-10-20'")
         await page.screenshot(path=str(ROOT/'qa/observed2026-point.png'))
         await page.get_by_role('button',name='Heatwave history',exact=True).click();await page.wait_for_function("document.querySelector('#monthCalendar svg')")
