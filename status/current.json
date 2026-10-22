@@ -1,6 +1,6 @@
 {
-  "updatedUtc": "2026-10-22T12:55:33.044072+00:00",
-  "message": "Both analyses are checked. Checking data and cell models.",
+  "updatedUtc": "2026-10-22T13:05:24.853181+00:00",
+  "message": "The 2026 MUR and OISST observations are available in the atlas for all three regions.",
   "jobs": [
     {
       "name": "GHRSST MUR \u00b7 three study areas",
