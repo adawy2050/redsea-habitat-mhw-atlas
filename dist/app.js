@@ -1,7 +1,7 @@
 /* Red Sea Habitat Heatwave Atlas. All scientific arrays are fetched locally. */
 (() => {
   'use strict';
-  const RELEASE='20261022-forecast-r4';
+  const RELEASE='20261023-october-r1';
   const $ = id => document.getElementById(id), S = window.AtlasStats;
   const labels = {Nino34: 'Niño-3.4', IOD: 'IOD', NAO: 'NAO', AO: 'AO', EAWR: 'EAWR', NAtl_SSTA: 'N. Atlantic SST', PDO: 'PDO',localSst:'Annual SST (OISST)'};
   const modeColors = {Nino34:'#c43d32', IOD:'#007d8a', NAO:'#7e52a0', AO:'#366aa2', EAWR:'#99700d', NAtl_SSTA:'#b52a74', PDO:'#39813c',localSst:'#7c660d'};
@@ -13,14 +13,14 @@
     mhw_max_intensity: {name:'Maximum intensity', unit:'°C', axis:'Maximum intensity (°C relative to threshold)', max:3, digits:2},
     mhw_cumulative_intensity: {name:'Cumulative intensity', unit:'°C days', axis:'Cumulative intensity (°C days)', max:160, digits:1}
   };
-  const state = {product:'mur', metric:'mhw_days',mapMode:'history', year:2025, basin:'all',region:'all', habitats:13, selection:null,historySecondary:'mhw_frequency', pixel:0, pins:[], arrays:new Map(),showTrend:true,climateTrend:false,
+  const state = {product:'mur', metric:'mhw_days',mapMode:'history', year:2026, basin:'all',region:'all', habitats:13, selection:null,historySecondary:'mhw_frequency', pixel:0, pins:[], arrays:new Map(),showTrend:true,climateTrend:false,
     from:2003, to:2025, lag:0, benchmark:'trend', index:'Nino34', detrend:true, selectedModes:new Set(['Nino34','IOD','NAtl_SSTA','AO']),
     step:'monthly', scale:'standard', climateSource:'latest',climateFrom:null,climateTo:null,outlookRecord:'GHRSST MUR',outlookScope:'ecoregion',pixelOpacity:.7,showPixels:true,timer:null,generation:0};
   let meta, pixels, climate, map, pixelLayer, selectedMarker, sourceMarker, sourceLine, climateZ, mapLand,landLayer,satelliteLayer,coverageMeta,liveClimate,outlook,externalModels;
   let outlookInputs='external';
   function externalInfo(product,ignoreChoice=false){const info=externalModels?.products[product];return (ignoreChoice||outlookInputs==='external')&&info&&info.nativeCells===meta?.products[product]?.cells.length&&externalModels.referenceAsOf===outlook?.asOf&&externalModels.seasonStart===outlook?.pixelOutlooks[product]?.seasonStart&&externalModels.forecastIssueMonth===outlook.pixelOutlooks[product].issueDate.slice(0,7)?info:null;}
   const coverageLayers={};
-  let modelData = null, currentHistory = [], climateExport = [];
+  let modelData = null, currentHistory = [], climateExport = [], historyTicket=0, modelTicket=0;
   const pinColors = ['#3f7f82','#997ba0','#9b954d','#5f809d','#c68f57'];
   const config = {responsive:true, displaylogo:false, scrollZoom:false, modeBarButtonsToRemove:['lasso2d','select2d','autoScale2d'],
     toImageButtonOptions:{format:'svg', filename:'redsea_habitat_mhw', height:550, width:1100, scale:1}};
@@ -45,6 +45,7 @@
     }).catch(e=>{state.arrays.delete(key);throw e;}));
     return state.arrays.get(key);
   }
+  async function mapValues(product,metric,year=state.year){if(year===2026)return AtlasObserved2026.mapValues(product,metric);const a=await array(product,metric),p=meta.products[product],k=p.years.indexOf(year);if(k<0)throw Error('Map year unavailable.');return a.subarray(k*p.cells.length,(k+1)*p.cells.length);}
   async function forecastArray(product,name){const extra=externalInfo(product),file=extra?.files[name],key=(file?'issued_':'')+`${product}_outlook_${name}`;if(!state.arrays.has(key))state.arrays.set(key,fetch((file?'./forecasts/'+file:`./data/${product}_outlook_${name}.f32`)+`?v=${RELEASE}`).then(r=>{if(!r.ok)throw Error(`Unable to load point forecast ${name}`);return r.arrayBuffer();}).then(b=>new Float32Array(b)));return state.arrays.get(key);}
   async function pointForecast(product,pixel){
     const original=outlook.pixelOutlooks[product];if(!original)return null;const extra=externalInfo(product),info=extra?{...original,...extra}:original;const index=sourceIndex(pixel,product),names=['probability','baseline','threshold','skill','skill_all','brier','baseline_brier','n_high','alpha'];
@@ -80,7 +81,7 @@
   function download(name, content, mime='text/csv;charset=utf-8') {
     const url=URL.createObjectURL(new Blob([content],{type:mime})), a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);
   }
-  function csv(rows) {if(!rows.length)return '';const keys=Object.keys(rows[0]),escape=v=>{const s=v===null||v===undefined?'':String(v);return /[",\n]/.test(s)?`"${s.replaceAll('"','""')}"`:s;};return [keys,...rows.map(r=>keys.map(k=>r[k]))].map(row=>row.map(escape).join(',')).join('\r\n');}
+  function csv(rows) {if(!rows.length)return '';const keys=[...new Set(rows.flatMap(row=>Object.keys(row)))],escape=v=>{const s=v===null||v===undefined?'':String(v);return /[",\n]/.test(s)?`"${s.replaceAll('"','""')}"`:s;};return [keys,...rows.map(r=>keys.map(k=>r[k]))].map(row=>row.map(escape).join(',')).join('\r\n');}
   function showMethods() {$('methodsDialog').showModal();}
 
   function makeMap(land) {
@@ -111,7 +112,7 @@
         const centre=this._map.getCenter(),key=[centre.lat,centre.lng,this._map.getZoom(),size.x,size.y,state.basin,state.region,state.habitats,state.product].join('|');
         if(this.positionKey!==key){this.positionKey=key;this.positions=[];this.filteredCount=0;for(let i=0;i<pixels.length;i++){const point=pixels[i];if(!visible(point))continue;this.filteredCount++;if(!bounds.contains([point[1],point[0]]))continue;const q=this._map.latLngToContainerPoint([point[1],point[0]]);this.positions.push([i,q.x,q.y,sourceIndex(i)]);}}
         count=this.filteredCount;
-        for(const [i,x,y,source] of this.positions){const v=state.mapMode==='probability'?this.probabilityArray[source]*100:this.a[yi*n+source];ctx.fillStyle=color(v,info.max);ctx.fillRect(x-step/2,y-step/2,step,step);}
+        for(const [i,x,y,source] of this.positions){const v=state.mapMode==='probability'?this.probabilityArray[source]*100:state.year===2026?this.currentArray?.[source]:this.a[yi*n+source];ctx.fillStyle=color(v,info.max);ctx.fillRect(x-step/2,y-step/2,step,step);}
 
         $('visibleCount').textContent=state.showPixels?`${count.toLocaleString()} habitat cells · click to explore`:'Inventory coverage · heatwave pixels hidden';
       }
@@ -128,35 +129,35 @@
   }
 
   function setYearControls(reset=true) {
-    const p=meta.products[state.product];if(reset){state.from=p.years[0];state.to=p.years.at(-1);}
-    for(const id of ['fromYear','toYear']){$(id).replaceChildren(...p.years.map(y=>new Option(y,y)));}
+    const p=meta.products[state.product];if(reset){state.from=p.years[0];state.to=2026;}
+    for(const id of ['fromYear','toYear']){$(id).replaceChildren(...[...p.years,2026].map(y=>new Option(y===2026?'2026 · to 20 Oct':y,y)));}
     $('fromYear').value=state.from;$('toYear').value=state.to;
-    $('year').min=p.years[0];$('year').max=p.years.at(-1);$('yearStart').textContent=p.years[0];
-    state.year=Math.max(p.years[0],Math.min(p.years.at(-1),state.year));$('year').value=state.year;
+    $('year').min=p.years[0];$('year').max=2026;$('yearStart').textContent=p.years[0];
+    state.year=Math.max(p.years[0],Math.min(2026,state.year));$('year').value=state.year;
   }
   async function renderMap() {
     const product=state.product,metric=state.metric,token=++state.generation;
     loading('Loading habitat-pixel histories…');
-    try {const [a,p]=await Promise.all([array(product,metric),state.mapMode==='probability'?forecastArray(product,'probability'):Promise.resolve(null)]);if(token!==state.generation)return;pixelLayer.a=a;pixelLayer.probabilityArray=p;pixelLayer.draw();$('loading').hidden=true;updateMapText();await renderPixel();}
+    try {const [a,p,current]=await Promise.all([array(product,metric),state.mapMode==='probability'?forecastArray(product,'probability'):Promise.resolve(null),state.mapMode==='history'&&state.year===2026?mapValues(product,metric):Promise.resolve(null)]);if(token!==state.generation)return;if(state.mapMode==='history'&&state.year===2026&&!current){await renderMap();return;}pixelLayer.a=a;pixelLayer.currentArray=current;pixelLayer.probabilityArray=p;pixelLayer.draw();$('loading').hidden=true;updateMapText();await renderPixel();}
     catch(e){$('loadingText').textContent=`${e.message}. Reload to try again.`;console.error(e);}
   }
   function updateMapText() {
     const probability=state.mapMode==='probability',forecast=outlook.pixelOutlooks[state.product];
-    $('mapTitle').replaceChildren(document.createTextNode(`${mapInfo().name} `),Object.assign(document.createElement('span'),{id:'mapYear',textContent:probability?`${forecast.season} ${forecast.seasonStart.slice(0,4)}`:state.year}));
-    $('yearLabel').textContent=probability?`${forecast.season} ${forecast.seasonStart.slice(0,4)}`:state.year;const p=meta.products[state.product],info=mapInfo();
+    $('mapTitle').replaceChildren(document.createTextNode(`${mapInfo().name} `),Object.assign(document.createElement('span'),{id:'mapYear',textContent:probability?`${forecast.season} ${forecast.seasonStart.slice(0,4)}`:state.year===2026?'2026 · to 20 Oct':state.year}));
+    $('yearLabel').textContent=probability?`${forecast.season} ${forecast.seasonStart.slice(0,4)}`:state.year===2026?'2026 · to 20 Oct':state.year;const p=meta.products[state.product],info=mapInfo();
     for(const id of ['year','play'])$(id).hidden=probability;
     $('yearStart').textContent=probability?`${monthLabel(forecast.seasonStart.slice(0,7))}–${monthLabel(forecast.seasonEnd.slice(0,7))}`:p.years[0];
     document.querySelector('.timeline-caption').textContent=probability?'INDIVIDUAL PIXEL MODELS':'YEAR BY YEAR';document.querySelector('.year-climate').hidden=probability;
-    $('mapNote').textContent=probability?`${p.name} source cells · ${forecast.leadMonths}-month lead · updated ${outlook.asOf}`:`${p.name} · ${p.resolution} SST · baseline ${p.baseline}`;
+    $('mapNote').textContent=probability?`${p.name} source cells · ${forecast.leadMonths}-month lead · updated ${outlook.asOf}`:`${p.name} · ${p.resolution} SST · baseline ${p.baseline}${state.year===2026?' · 1 Jan–20 Oct 2026; event counts and durations describe within-year segments':''}`;
     $('legendTitle').textContent=info.axis;$('legendMax').textContent=`${info.max}+`;updatePixelValue();
-    $('climateYearLabel').textContent=`Climate in ${state.year}`;
-    $('yearClimateValues').replaceChildren(...climate.modes.map(m=>{const e=document.createElement('div'),dot=document.createElement('i'),name=document.createElement('span'),value=document.createElement('strong');dot.style.background=modeColors[m];name.textContent=labels[m];value.textContent=`${signed(climateZ[m][state.year-1982],1)}σ`;e.append(dot,name,value);return e;}));
+    $('climateYearLabel').textContent=state.year===2026?'2026 index means · available months':`Climate in ${state.year}`;document.querySelector('.year-climate-heading span').textContent=state.year===2026?'Observed means · latest available months':'Annual indices · σ from 1982–2025';
+    $('yearClimateValues').replaceChildren(...climate.modes.map(m=>{const e=document.createElement('div'),dot=document.createElement('i'),name=document.createElement('span'),value=document.createElement('strong');dot.style.background=modeColors[m];name.textContent=labels[m];const available=liveClimate.monthly.values[m].filter((v,i)=>liveClimate.monthly.dates[i].startsWith('2026-')&&S.finite(v));value.textContent=state.year===2026?(available.length?number(S.mean(available),2):'—'):`${signed(climateZ[m][state.year-1982],1)}σ`;e.append(dot,name,value);return e;}));
   }
   function updatePixelValue() {
-    if(!pixelLayer?.a)return;const p=meta.products[state.product],a=pixelLayer.a,v=a[p.years.indexOf(state.year)*p.cells.length+sourceIndex(state.pixel)];
+    if(!pixelLayer?.a)return;const p=meta.products[state.product],a=pixelLayer.a,v=state.year===2026?pixelLayer.currentArray?.[sourceIndex(state.pixel)]:a[p.years.indexOf(state.year)*p.cells.length+sourceIndex(state.pixel)];
     if(state.mapMode==='probability'&&pixelLayer.probabilityArray){$('pixelValue').textContent=number(pixelLayer.probabilityArray[sourceIndex(state.pixel)]*100,1);$('pixelUnit').textContent=`% high-exposure probability · ${outlook.pixelOutlooks[state.product].season}`;return;}
     $('pixelValue').textContent=number(v,metricInfo[state.metric].digits);
-    $('pixelUnit').textContent=`${metricInfo[state.metric].unit} in ${state.year}`;
+    $('pixelUnit').textContent=`${metricInfo[state.metric].unit} ${state.year===2026?'· 1 Jan–20 Oct 2026':`in ${state.year}`}`;
   }
   function selectPixel(index, pan=false) {
     state.pixel=index;const p=pixels[index];if(pan)map.setView([p[1],p[0]],Math.max(map.getZoom(),8));
@@ -181,7 +182,7 @@
     window.dispatchEvent(new CustomEvent('atlaspixelchange',{detail:{basin:pointBasin(p).id,habitats:p[2],latitude:p[1],longitude:p[0],pixel:index}}));await Promise.all([renderHistory(),renderModel(),renderPointOutlook()]);if(state.outlookScope==='pixel')renderOutlook();
   }
   async function renderHistory() {
-    const product=state.product,metric=state.metric,a=await array(product,metric);if(product!==state.product||metric!==state.metric)return;
+    const ticket=++historyTicket;const product=state.product,metric=state.metric,a=await array(product,metric);if(product!==state.product||metric!==state.metric)return;
     const p=meta.products[product],indices=[state.pixel,...state.pins.filter(i=>i!==state.pixel)];currentHistory=[];
     const traces=indices.map((index,j)=>{const values=series(index,a),years=p.years.filter(inYears),v=values.filter((_,k)=>inYears(p.years[k]));
       years.forEach((year,k)=>currentHistory.push({pixel:pixelId(index),latitude:pixels[index][1],longitude:pixels[index][0],product:p.name,year,metric,value:v[k],series:'observed'}));
@@ -190,12 +191,15 @@
     if(state.showTrend){const selected=traces[0],valid=selected.y.map((v,i)=>S.finite(v)?i:-1).filter(i=>i>=0);if(valid.length>=3){const years=valid.map(i=>selected.x[i]),fit=S.fit(valid.map(i=>selected.y[i]),[years]);traces.push({x:years,y:fit.pred,type:'scatter',mode:'lines',name:'Selected cell · fitted trend',line:{color:'#253444',width:2,dash:'dot'},hovertemplate:'%{y:.2f}<extra>Fitted linear trend</extra>'});years.forEach((year,k)=>currentHistory.push({pixel:pixelId(state.pixel),latitude:pixels[state.pixel][1],longitude:pixels[state.pixel][0],product:p.name,year,metric,value:fit.pred[k],series:'fitted_linear_trend'}));}}
     const second=state.historySecondary;
     if(second&&second!==metric){const key=second==='localSst'?'oisst':product,secondary=await array(key,second==='localSst'?'sst':second);if(product!==state.product||metric!==state.metric)return;const yy=meta.products[key].years,vv=series(state.pixel,secondary,key),keep=yy.map((y,i)=>inYears(y)?i:-1).filter(i=>i>=0),name=second==='localSst'?'Annual SST (OISST)':metricInfo[second].name;traces.push({x:keep.map(i=>yy[i]),y:keep.map(i=>vv[i]),name,type:'scatter',mode:'lines',yaxis:'y2',line:{color:'#7a6253',width:1.4,dash:'dash'},hovertemplate:'%{y:.2f}<extra>'+name+'</extra>'});keep.forEach(i=>currentHistory.push({pixel:pixelId(state.pixel),latitude:pixels[state.pixel][1],longitude:pixels[state.pixel][0],product:meta.products[key].name,year:yy[i],metric:second,value:vv[i],series:'observed_secondary_axis'}));}
+    let currentEnd;
+    if(state.to>=2026&&window.AtlasObserved2026){const records=await Promise.all(indices.map(index=>AtlasObserved2026.forPoint(index,product)));if(ticket!==historyTicket)return;records.forEach((record,j)=>{if(record?.product!==product)return;const trace=AtlasObserved2026.runningTrace(record,metric,{name:coordinate(indices[j])+' · 2026 to date',line:{color:j===0?'#98614d':pinColors[(j-1)%pinColors.length],width:1.8,dash:'dot'}});traces.push(trace);currentEnd=record.index.dateEnd;trace.y.forEach((value,k)=>currentHistory.push({pixel:pixelId(indices[j]),latitude:pixels[indices[j]][1],longitude:pixels[indices[j]][0],product:p.name,year:2026,metric,value,series:'observed_running_to_date',date:record.index.dates[k]}));});if(second&&second!==metric){const sourceProduct=second==='localSst'?'oisst':product,record=second==='localSst'?await AtlasObserved2026.forPoint(state.pixel,'oisst'):records[0];if(ticket!==historyTicket)return;if(record?.product===sourceProduct)traces.push(AtlasObserved2026.runningTrace(record,second,{name:(second==='localSst'?'Mean SST':metricInfo[second].name)+' · 2026 to date',yaxis:'y2',line:{color:'#7a6253',width:1.4,dash:'dot'}}));}}
+    if(ticket!==historyTicket)return;
     renderPlot('historyPlot',traces,layout({margin:{l:65,r:70,t:45,b:48},yaxis:{title:metricInfo[metric].axis},yaxis2:{title:second&&second!==metric?(second==='localSst'?'SST (°C)':metricInfo[second].axis):'',overlaying:'y',side:'right',showgrid:false,zeroline:false,rangemode:second==='localSst'?'normal':'tozero',visible:!!second&&second!==metric},xaxis:{dtick:Math.max(1,Math.round((state.to-state.from)/9))},shapes:[{type:'line',xref:'x',x0:state.year,x1:state.year,yref:'paper',y0:0,y1:1,line:{color:'#a6b3a0',width:1,dash:'dot'}}]}),config);
-    $('historyCaption').textContent=`${p.name} · ${state.from}–${state.to} · baseline ${p.baseline} · ${metricInfo[metric].unit}`;
+    $('historyCaption').textContent=`${p.name} · ${state.from}–${Math.min(state.to,2025)} annual values${currentEnd?' · dotted 2026: running values through '+currentEnd:''} · baseline ${p.baseline} · ${metricInfo[metric].unit}`;
     $('pins').replaceChildren(...state.pins.map((index,j)=>{const e=document.createElement('span');e.className='pin';const dot=document.createElement('i');dot.className='pin-dot';dot.style.background=pinColors[j%pinColors.length];const b=document.createElement('button');b.textContent='×';b.setAttribute('aria-label',`Remove ${coordinate(index)}`);b.onclick=()=>{state.pins=state.pins.filter(i=>i!==index);renderHistory();};e.append(dot,document.createTextNode(coordinate(index)),b);return e;}));
   }
   async function renderModel() {
-    const product=state.product,metric=state.metric,pixel=state.pixel;
+    const ticket=++modelTicket;const product=state.product,metric=state.metric,pixel=state.pixel;
     const [a,sst]=await Promise.all([array(product,metric),array('oisst','sst')]);
     if(product!==state.product||metric!==state.metric||pixel!==state.pixel)return;
     const years=meta.products[product].years, values=series(pixel,a), sstSeries=series(pixel,sst,'oisst'),annual=climate.annual;
@@ -209,10 +213,12 @@
     modelData={rows,model,base,names:[reference,...climate.modes.map(m=>labels[m])],product,metric,pixel};
     $('modelSample').textContent=`${rows.length} complete years · ${ys[0]}–${ys.at(-1)}`;
     $('modelR2').textContent=number(model.r2,2);$('modelCv').textContent=number(model.cvR2,2);
+    const observedCurrent=state.to>=2026&&window.AtlasObserved2026?await AtlasObserved2026.forPoint(pixel,product):null;if(ticket!==modelTicket)return;
     const modelRendering=renderPlot('modelPlot',[
       {x:ys,y,type:'scatter',mode:'lines+markers',name:'Observed',line:{color:'#1768ac',width:2},marker:{size:4}},
       {x:ys,y:base.pred,type:'scatter',mode:'lines',name:reference,line:{color:'#8e9e8c',width:1.5,dash:'dot'}},
-      {x:ys,y:model.pred,type:'scatter',mode:'lines',name:'Combined model',line:{color:'#253444',width:2,dash:'dot'}}
+      {x:ys,y:model.pred,type:'scatter',mode:'lines',name:'Combined model',line:{color:'#253444',width:2,dash:'dot'}},
+      ...(observedCurrent?.product===product?[AtlasObserved2026.runningTrace(observedCurrent,metric)]:[])
     ],layout({margin:{l:52,r:12,t:37,b:37},legend:{...baseLayout.legend,y:1.17,font:{size:9}},yaxis:{title:metricInfo[metric].unit},xaxis:{dtick:Math.max(1,Math.round((state.to-state.from)/7))}}),config);
     modelRendering.then(()=>window.dispatchEvent(new Event('atlasmodelrender')));
     const colors=['#8591a0',...climate.modes.map(m=>modeColors[m])],bar=[];
@@ -268,7 +274,7 @@
   }
   async function renderOutlook(){
     const all=outlook.targets.filter(t=>t.available),latest=Object.values(liveClimate.latestByMode).sort().at(-1);
-    $('freshness').textContent=`Complete-year history through 2025 · 2026 observations in point views · climate feeds to ${monthLabel(latest)} · IOD to ${monthLabel(liveClimate.latestByMode.IOD)}`;
+    $('freshness').textContent=`Annual history through 2025 · observations through 20 Oct 2026 · climate feeds to ${monthLabel(latest)} · IOD to ${monthLabel(liveClimate.latestByMode.IOD)}`;
     $('footerFreshness').textContent=`Climate checked ${liveClimate.asOf} · weekly refresh`;
     if(!all.length){$('outlookSubtitle').textContent='Waiting for the required recent climate observations.';$('outlookCards').innerHTML=`<div class="unavailable-outlook">${outlook.targets.map(t=>t.reason||'No dated outlook available.').join(' · ')}</div>`;return;}
     const first=all[0],start=new Date(first.seasonStart+'T00:00:00Z'),end=new Date(first.seasonEnd+'T00:00:00Z');
@@ -321,7 +327,7 @@
     ctx.textAlign='right';ctx.fillText($('basemap').value!=='coastline'?'Imagery © Esri, Vantor, Earthstar Geographics, GIS User Community · GSHHG shoreline · UNEP-WCMC habitats':'GSHHG shoreline · UNEP-WCMC habitats · NASA/JPL · NOAA',w-20,h-18);
     canvas.toBlob(blob=>{if(!blob){note('Map image could not be generated.');return;}const a=document.createElement('a'),url=URL.createObjectURL(blob);a.href=url;a.download=`habitat_map_${state.product}_${state.year}.png`;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);},'image/png');
   }
-  function yearChanged(){state.year=Number($('year').value);pixelLayer.draw();window.dispatchEvent(new Event('atlasmapyearchange'));updateMapText();Plotly.relayout('historyPlot',{'shapes[0].x0':state.year,'shapes[0].x1':state.year}).catch(()=>{});}
+  async function yearChanged(){state.year=Number($('year').value);const product=state.product,metric=state.metric,year=state.year;if(year===2026&&state.mapMode==='history'){pixelLayer.currentArray=await mapValues(product,metric);if(product!==state.product||metric!==state.metric||year!==state.year)return;}pixelLayer.draw();window.dispatchEvent(new Event('atlasmapyearchange'));updateMapText();Plotly.relayout('historyPlot',{'shapes[0].x0':state.year,'shapes[0].x1':state.year}).catch(()=>{});}
   function bind() {
     window.addEventListener('atlaslanguagechange',()=>{renderHistory();renderModel();renderClimate();});
     $('product').onchange=()=>{stop();state.product=$('product').value;state.outlookRecord=meta.products[state.product].name;$('outlookRecord').value=state.outlookRecord;forecastAvailability();setYearControls();renderMap();renderClimate();renderOutlook();};
@@ -335,7 +341,7 @@
     $('showTrend').onchange=()=>{state.showTrend=$('showTrend').checked;renderHistory();};$('climateTrend').onchange=()=>{state.climateTrend=$('climateTrend').checked;renderClimate();};
     document.querySelectorAll('input[name="habitat"]').forEach(el=>el.onchange=()=>{state.habitats=[...document.querySelectorAll('input[name="habitat"]:checked')].reduce((s,e)=>s+Number(e.value),0);filterChanged();});
     $('year').oninput=yearChanged;
-    $('play').onclick=()=>{if(state.timer){stop();return;}$('play').textContent='';$('play').setAttribute('aria-label','Pause annual maps');const p=meta.products[state.product];if(state.year===p.years.at(-1)){$('year').value=p.years[0];yearChanged();}state.timer=setInterval(()=>{if(state.year>=p.years.at(-1)){stop();return;}$('year').value=state.year+1;yearChanged();},750);};
+    $('play').onclick=()=>{if(state.timer){stop();return;}$('play').textContent='';$('play').setAttribute('aria-label','Pause annual maps');const p=meta.products[state.product];if(state.year===2026){$('year').value=p.years[0];yearChanged();}state.timer=setInterval(()=>{if(state.year>=2026){stop();return;}$('year').value=state.year+1;yearChanged();},750);};
     $('fitMap').onclick=fitStudy;
     $('pinPixel').onclick=()=>{if(state.pins.includes(state.pixel)){note('This cell is already in the comparison.');return;}if(state.pins.length>=5){note('Compare up to five pinned cells. Remove one to add another.');return;}state.pins.push(state.pixel);renderHistory();note('Cell added. Select another cell on the map to compare.');};
     $('clearPins').onclick=()=>{state.pins=[];renderHistory();};
@@ -380,12 +386,12 @@
   }
   window.AtlasUI={
     snapshot(){return {state:{...state},meta,pixels,climate,liveClimate,outlook,model:modelData,point:pixels[state.pixel],sourceIndex:sourceIndex(state.pixel),oisstIndex:sourceIndex(state.pixel,'oisst')};},
-    array:(p,m)=>m.startsWith('outlook_')?forecastArray(p,m.slice(8)):array(p,m),series,nearest,selectPixel,visible,mapInfo,pixelId,color,forecast:pointForecast,
+    mapValues,array:(p,m)=>m.startsWith('outlook_')?forecastArray(p,m.slice(8)):array(p,m),series,nearest,selectPixel,visible,mapInfo,pixelId,color,forecast:pointForecast,
     get map(){return map;},get fallbackLand(){return landLayer;},get satellite(){return satelliteLayer;},
     setOutlookInputs(value){outlookInputs=value;renderMap();renderOutlook();window.dispatchEvent(new Event('atlasforecastinputschange'));},
     hasIssuedForecast:product=>!!externalInfo(product,true),
-    setYear(year){if(year===state.year||!meta.products[state.product].years.includes(year)||state.mapMode==='probability')return;$('year').value=year;yearChanged();},
-    setRange(from,to){state.from=Math.max(meta.products[state.product].years[0],Math.ceil(from));state.to=Math.min(2025,Math.floor(to));if(state.from>state.to)return;$('fromYear').value=state.from;$('toYear').value=state.to;renderHistory();renderModel();window.dispatchEvent(new Event('atlasrangechange'));},
+    setYear(year){if(year===state.year||![...meta.products[state.product].years,2026].includes(year)||state.mapMode==='probability')return;$('year').value=year;yearChanged();},
+    setRange(from,to){state.from=Math.max(meta.products[state.product].years[0],Math.floor(from));state.to=Math.min(2026,Math.floor(to));if(state.from>state.to)return;$('fromYear').value=state.from;$('toYear').value=state.to;renderHistory();renderModel();window.dispatchEvent(new Event('atlasrangechange'));},
     redraw(){pixelLayer.draw();},
     selectBounds(bounds){state.selection=bounds?[bounds.getWest(),bounds.getSouth(),bounds.getEast(),bounds.getNorth()]:null;if(bounds){const centre=bounds.getCenter(),i=nearest(centre.lat,centre.lng,true);if(i>=0)selectPixel(i);}filterChanged();window.dispatchEvent(new Event('atlasselectionchange'));},
     async visit(step){

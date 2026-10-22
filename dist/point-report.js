@@ -34,6 +34,7 @@
     const scratch=document.createElement('div');scratch.dataset.reportChart='true';scratch.style.cssText='position:fixed;left:-10000px;top:0;width:1100px;height:390px';document.body.append(scratch);
     let image;
     const traces=[{x:r.product.years,y:r.histories[r.metric],name:'Observed',mode:'lines+markers',type:'scatter',line:{color:'#1768ac',width:2},marker:{size:4}}];
+    if(r.observed2026)traces.push(AtlasObserved2026.runningTrace(r.observed2026,r.metric));
     const valid=r.histories[r.metric].map((v,i)=>Number.isFinite(v)?i:-1).filter(i=>i>=0);
     if(valid.length>=3){const x=valid.map(i=>r.product.years[i]),fit=window.AtlasStats.fit(valid.map(i=>r.histories[r.metric][i]),[x]);traces.push({x,y:fit.pred,name:'Fitted linear trend',type:'scatter',mode:'lines',line:{color:'#34465b',width:2,dash:'dot'}});}
     try{await Plotly.newPlot(scratch,traces,
@@ -72,7 +73,7 @@
     }
     if(r.detail){
       doc.addPage();title('Heatwave calendar and next-season outlook',`${coordinate} | ${r.region} | ${r.product.name}`);y=40;
-      const monthly=r.detail.monthly,years=r.product.years,calendar=years.map(year=>Array.from({length:12},(_,m)=>{const key=`${year}-${String(m+1).padStart(2,'0')}`;const i=monthly.dates.findIndex(d=>d.startsWith(key));return i<0?null:monthly.values[i];}));
+      const monthly=r.detail.monthly,years=[...r.product.years,...(r.detail.currentYear?[r.detail.currentYear]:[])],calendar=years.map(year=>Array.from({length:12},(_,m)=>{const key=`${year}-${String(m+1).padStart(2,'0')}`;const i=monthly.dates.findIndex(d=>d.startsWith(key));return i<0?null:monthly.values[i];}));
       const heat=await extraChart([{x:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],y:years,z:calendar,type:'heatmap',colorscale:[[0,'#f3eee2'],[.5,'#4b737c'],[1,'#9f542e']],zmin:0,zmax:31,colorbar:{title:'Days',thickness:12}}],{xaxis:{type:'category',side:'top'},yaxis:{autorange:'reversed',tickformat:'d',dtick:years.length>30?4:2}});doc.addImage(heat,'PNG',X,y,W,85);y+=91;
       const days=r.histories.mhw_days.filter(Number.isFinite),mean=v=>v.reduce((a,b)=>a+b,0)/v.length;
       y=para(`Mean heatwave days per year: first five years ${num(mean(days.slice(0,5)),1)}; last five years ${num(mean(days.slice(-5)),1)}; difference ${num(mean(days.slice(-5))-mean(days.slice(0,5)),1)} days/year.`,y,9);
@@ -100,9 +101,10 @@
     if(r.association){
       doc.addPage();title('Observed, fitted and conditional annual curves',`${coordinate} | ${r.product.name} | ${r.metricInfo.name}`);y=40;
       const a=r.association,ys=a.rows.map(v=>v.year),traces=[{x:ys,y:a.rows.map(v=>v.observed),name:'Observed',mode:'lines+markers',line:{color:'#245e88',width:2},marker:{size:4}},{x:ys,y:a.base.pred,name:a.names[0],mode:'lines',line:{color:'#90977d',dash:'dot',width:1.5}},{x:ys,y:a.model.pred,name:'Combined annual model',mode:'lines',line:{color:'#34465b',dash:'dot',width:2}}];
+      if(r.observed2026)traces.push(AtlasObserved2026.runningTrace(r.observed2026,r.metric));
       if(r.scenarios?.length)traces.push({x:[ys.at(-1),...r.scenarios.map(v=>v.year)],y:[a.model.pred.at(-1),...r.scenarios.map(v=>v.value)],name:'Conditional annual extension',mode:'lines+markers',line:{color:'#b15b35',dash:'dot',width:2}});
       const plot=await extraChart(traces,{xaxis:{tickformat:'d'},yaxis:{title:r.metricInfo.unit}});doc.addImage(plot,'PNG',X,y,W,78);y+=85;
-      y=para('Solid: observations. Dotted: model fit, reference-only fit and conditional extension. The extension holds unavailable future predictors at their latest available values; it is separate from the seasonal exposure probability forecast.',y,8);
+      y=para(`Solid: observations. Dotted 2026 observed curves: running values through ${r.observed2026?.index.dateEnd||'the latest observation'}. Other dotted lines: model fit, reference-only fit and conditional extension. The extension holds unavailable future predictors at their latest available values; it is separate from the seasonal exposure probability forecast.`,y,8);
       if(r.scenarios?.length)y=table(['Index','2026 input year','Available months','Mean index input'],r.scenarios[0].inputs.map(i=>[i.mode,i.year,i.months,num(i.value,3)]),y,{styles:{fontSize:7.5,cellPadding:1.6}});
     }
     if(y>190){doc.addPage();title('Sources, methods and contacts',coordinate);y=42;}
