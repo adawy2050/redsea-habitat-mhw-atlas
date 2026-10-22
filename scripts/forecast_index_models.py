@@ -122,7 +122,7 @@ def main():
             'skill':skill,'skill_all':1-np.mean((policy-truth)**2,axis=0)/np.maximum(np.mean((climatologies-truth)**2,axis=0),1e-12),
             'n_high':truth[post].sum(axis=0),'alpha':alphas,'observed':truth,'threshold':threshold,'latest_season_days':y[-1]}
         for name,a in arrays.items():np.asarray(a,dtype='<f4').tofile(OUT/f'{product}_{name}.f32')
-        report['products'][product]={'nativeCells':n,'trainingYears':years.tolist(),'testYears':test_years.tolist(),
+        report['products'][product]={'nativeCells':n,'issueDate':report['asOf'][:10],'trainingYears':years.tolist(),'testYears':test_years.tolist(),
             'postBaselineMask':post.tolist(),'nTest':int(post.sum()),'promotedCells':int(promote.sum()),
             'nTestRetrospective':len(test_years),
             'completedDJF2025Added':added is not None,'medianBrierGain':float(np.median(base_brier-brier)),

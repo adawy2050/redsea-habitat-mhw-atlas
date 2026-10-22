@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-10-22T11:36:41.541013+00:00",
+  "asOf": "2026-10-22T11:51:33.994653+00:00",
   "referenceAsOf": "2026-10-22",
   "season": "DJF",
   "seasonStart": "2026-12-01",
@@ -21,6 +21,7 @@
   "products": {
     "mur": {
       "nativeCells": 166771,
+      "issueDate": "2026-10-22",
       "trainingYears": [
         2004,
         2005,
@@ -102,6 +103,7 @@
     },
     "oisst": {
       "nativeCells": 2264,
+      "issueDate": "2026-10-22",
       "trainingYears": [
         1983,
         1984,

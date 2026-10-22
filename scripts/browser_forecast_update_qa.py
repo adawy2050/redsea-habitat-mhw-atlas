@@ -11,7 +11,7 @@ async def main():
         assert await page.locator('#photoBasin option[value="eastasia"]').count()==1
         f=await page.evaluate('AtlasUI.forecast("oisst",AtlasUI.snapshot().state.pixel)');assert f['external'] is not None and f['trainingLastYear']==2025 and f['nTest']==10
         dates=await page.evaluate('AtlasDetails.load(AtlasUI.snapshot().state.pixel,"oisst").then(d=>({daily:d.daily.dates.at(-1),monthly:d.monthly.dates.at(-1),year:d.currentYear}))');assert dates=={'daily':'2026-10-20','monthly':'2026-10-15','year':2026},dates
-        await page.locator('#openPointAnalysis').click();await page.get_by_role('button',name='Climate indices',exact=True).click();await page.wait_for_function("document.querySelector('#issuedIndexPlot').data?.length>20",timeout=30000)
+        await page.locator('#openPointAnalysis').click();await page.wait_for_function("document.querySelectorAll('#observed2026Metrics tbody tr').length===6",timeout=30000);await page.get_by_role('button',name='Climate indices',exact=True).click();await page.wait_for_function("document.querySelector('#issuedIndexPlot').data?.length>20",timeout=30000)
         await page.locator('#issuedIndexForecasts').scroll_into_view_if_needed();await page.screenshot(path=str(ROOT/'qa/issued-climate-forecasts.png'))
         await page.get_by_role('button',name='Outlook',exact=True).click();await page.locator('#issuedCellPlot').scroll_into_view_if_needed();await page.wait_for_function("document.querySelector('#issuedCellPlot').data?.length===4")
         await page.screenshot(path=str(ROOT/'qa/issued-cell-outlook.png'))
