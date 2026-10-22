@@ -15,6 +15,12 @@ SCRIPTS=['i18n.js','ui-strings.js','gallery.js','stats.js','app.js','point-repor
 STYLES=['styles.css','atlas.css','point.css','portal.css','upgrade.css','world.css','scientific.css','point-window.css']
 
 
+def write_utf8(path, text):
+    # Path.write_text(newline=...) requires Python 3.10; the data server uses 3.9.
+    with path.open('w', encoding='utf8', newline='\n') as stream:
+        stream.write(text)
+
+
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--tracked-only',action='store_true',help='Package only files currently staged/tracked during an incremental release');args=parser.parse_args()
     tracked=set(subprocess.check_output(['git','ls-files','--cached','-z'],cwd=ROOT.parent).decode('utf8').split('\0')) if args.tracked_only else None
@@ -22,16 +28,16 @@ def main():
     css=fonts+'\n'+'\n'.join((ROOT/name).read_text(encoding='utf8') for name in STYLES)
     css=re.sub(r'/\*.*?\*/','',css,flags=re.S)
     css=re.sub(r'\s+',' ',css).strip()
-    (ROOT/'interface.css').write_text(css,encoding='utf8',newline='\n')
-    (ROOT/'language.js').write_text('\n;\n'.join((ROOT/name).read_text(encoding='utf8') for name in ['locales.js',*SCRIPTS[:2]]),encoding='utf8',newline='\n')
+    write_utf8(ROOT/'interface.css', css)
+    write_utf8(ROOT/'language.js', '\n;\n'.join((ROOT/name).read_text(encoding='utf8') for name in ['locales.js',*SCRIPTS[:2]]))
     js='\n;\n'.join((ROOT/name).read_text(encoding='utf8') for name in SCRIPTS[2:])
-    (ROOT/'interface.js').write_text(js,encoding='utf8',newline='\n')
+    write_utf8(ROOT/'interface.js', js)
     records={}
     for path in sorted(ROOT.rglob('*')):
         if tracked is not None and 'dist/'+path.relative_to(ROOT).as_posix() not in tracked:continue
         if not path.is_file() or path.relative_to(ROOT).parts[0]=='data' or path.name=='asset-manifest.json' or path.relative_to(ROOT).as_posix() in ['status/current.json','status/photos.json','observed2026/status.json']:continue
         raw=path.read_bytes();records[path.relative_to(ROOT).as_posix()]={'bytes':len(raw),'sha256':hashlib.sha256(raw).hexdigest()}
-    (ROOT/'asset-manifest.json').write_text(json.dumps({'scope':'Presentation assets and separate observed display records; study files retain data/manifest.json','files':records},separators=(',',':')),encoding='utf8',newline='\n')
+    write_utf8(ROOT/'asset-manifest.json', json.dumps({'scope':'Presentation assets and separate observed display records; study files retain data/manifest.json','files':records},separators=(',',':')))
     print(f'Built interface bundles; {len(records):,} assets with SHA-256 hashes.')
 
 

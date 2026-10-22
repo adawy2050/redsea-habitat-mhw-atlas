@@ -40,6 +40,7 @@ def main():
         with path.open('w',encoding='utf8',newline='') as stream:
             writer=csv.DictWriter(stream,fieldnames=list(records[0]));writer.writeheader();writer.writerows(records)
         summary['summaryCSV']=path.name
-    (OUT/'analysis.json').write_text(json.dumps(summary,separators=(',',':')),encoding='utf8',newline='\n')
+    with (OUT/'analysis.json').open('w',encoding='utf8',newline='\n') as stream:
+        stream.write(json.dumps(summary,separators=(',',':')))
 
 if __name__=='__main__':main()
