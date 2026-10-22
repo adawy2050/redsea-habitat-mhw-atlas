@@ -1,6 +1,6 @@
 {
-  "updatedUtc": "2026-10-22T12:30:26.292166+00:00",
-  "message": "Both analyses are checked. Website publication is retrying; the last published version remains available.",
+  "updatedUtc": "2026-10-22T12:35:28.053828+00:00",
+  "message": "Both analyses are checked. Preparing publication.",
   "jobs": [
     {
       "name": "GHRSST MUR \u00b7 three study areas",
