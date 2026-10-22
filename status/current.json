@@ -1,0 +1,21 @@
+{
+  "updatedUtc": "2026-10-22T07:27:45.809038+00:00",
+  "message": "Downloading daily observations and preparing habitat-cell analyses.",
+  "jobs": [
+    {
+      "name": "GHRSST MUR \u00b7 three study areas",
+      "stage": "Preparing habitat-cell downloads",
+      "latestDate": null
+    },
+    {
+      "name": "NOAA OISST \u00b7 three study areas",
+      "stage": "Preparing habitat-cell downloads",
+      "latestDate": null
+    }
+  ],
+  "photos": {
+    "completed": 47,
+    "target": 470,
+    "stage": "discovery"
+  }
+}
