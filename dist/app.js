@@ -1,7 +1,7 @@
 /* Red Sea Habitat Heatwave Atlas. All scientific arrays are fetched locally. */
 (() => {
   'use strict';
-  const RELEASE='20261022-mixed-r1';
+  const RELEASE='20261022-forecast-r2';
   const $ = id => document.getElementById(id), S = window.AtlasStats;
   const labels = {Nino34: 'Niño-3.4', IOD: 'IOD', NAO: 'NAO', AO: 'AO', EAWR: 'EAWR', NAtl_SSTA: 'N. Atlantic SST', PDO: 'PDO',localSst:'Annual SST (OISST)'};
   const modeColors = {Nino34:'#c43d32', IOD:'#007d8a', NAO:'#7e52a0', AO:'#366aa2', EAWR:'#99700d', NAtl_SSTA:'#b52a74', PDO:'#39813c',localSst:'#7c660d'};
@@ -16,7 +16,9 @@
   const state = {product:'mur', metric:'mhw_days',mapMode:'history', year:2025, basin:'all',region:'all', habitats:13, selection:null,historySecondary:'mhw_frequency', pixel:0, pins:[], arrays:new Map(),showTrend:true,climateTrend:false,
     from:2003, to:2025, lag:0, benchmark:'trend', index:'Nino34', detrend:true, selectedModes:new Set(['Nino34','IOD','NAtl_SSTA','AO']),
     step:'monthly', scale:'standard', climateSource:'latest',climateFrom:null,climateTo:null,outlookRecord:'GHRSST MUR',outlookScope:'ecoregion',pixelOpacity:.7,showPixels:true,timer:null,generation:0};
-  let meta, pixels, climate, map, pixelLayer, selectedMarker, sourceMarker, sourceLine, climateZ, mapLand,landLayer,satelliteLayer,coverageMeta,liveClimate,outlook;
+  let meta, pixels, climate, map, pixelLayer, selectedMarker, sourceMarker, sourceLine, climateZ, mapLand,landLayer,satelliteLayer,coverageMeta,liveClimate,outlook,externalModels;
+  let outlookInputs='external';
+  function externalInfo(product,ignoreChoice=false){const info=externalModels?.products[product];return (ignoreChoice||outlookInputs==='external')&&info&&info.nativeCells===meta?.products[product]?.cells.length&&externalModels.referenceAsOf===outlook?.asOf&&externalModels.seasonStart===outlook?.pixelOutlooks[product]?.seasonStart&&externalModels.forecastIssueMonth===outlook.pixelOutlooks[product].issueDate.slice(0,7)?info:null;}
   const coverageLayers={};
   let modelData = null, currentHistory = [], climateExport = [];
   const pinColors = ['#3f7f82','#997ba0','#9b954d','#5f809d','#c68f57'];
@@ -43,11 +45,12 @@
     }).catch(e=>{state.arrays.delete(key);throw e;}));
     return state.arrays.get(key);
   }
-  async function forecastArray(product,name){const key=`${product}_outlook_${name}`;if(!state.arrays.has(key))state.arrays.set(key,fetch(`./data/${key}.f32?v=${RELEASE}`).then(r=>{if(!r.ok)throw Error(`Unable to load point forecast ${name}`);return r.arrayBuffer();}).then(b=>new Float32Array(b)));return state.arrays.get(key);}
+  async function forecastArray(product,name){const extra=externalInfo(product),file=extra?.files[name],key=(file?'issued_':'')+`${product}_outlook_${name}`;if(!state.arrays.has(key))state.arrays.set(key,fetch((file?'./forecasts/'+file:`./data/${product}_outlook_${name}.f32`)+`?v=${RELEASE}`).then(r=>{if(!r.ok)throw Error(`Unable to load point forecast ${name}`);return r.arrayBuffer();}).then(b=>new Float32Array(b)));return state.arrays.get(key);}
   async function pointForecast(product,pixel){
-    const info=outlook.pixelOutlooks[product];if(!info)return null;const index=sourceIndex(pixel,product),names=['probability','baseline','threshold','skill','skill_all','brier','baseline_brier','n_high','alpha'];
+    const original=outlook.pixelOutlooks[product];if(!original)return null;const extra=externalInfo(product),info=extra?{...original,...extra}:original;const index=sourceIndex(pixel,product),names=['probability','baseline','threshold','skill','skill_all','brier','baseline_brier','n_high','alpha'];
     const arrays=await Promise.all(names.map(name=>forecastArray(product,name))),values=Object.fromEntries(names.map((name,i)=>[name,arrays[i][index]]));
-    return {...info,...values,index,product,pixel,available:true,scope:'pixel',habitat:'Selected habitat pixel',region:`${coordinate(pixel)} · ${meta.regions[pixels[pixel][3]]}`,
+    const external=extra?Object.fromEntries(await Promise.all(['reference_probability','candidate_probability','selected_weight','gain','candidate_gain','latest_season_days'].map(async name=>[name,(await forecastArray(product,name))[index]]))):null;
+    return {...info,...values,external,index,product,pixel,available:true,scope:'pixel',habitat:'Selected habitat pixel',region:`${coordinate(pixel)} · ${meta.regions[pixels[pixel][3]]}`,
       historicalProbability:values.baseline,highExposureThresholdDays:values.threshold,trainingSeasons:info.trainingYears.length,
       trainingFirstYear:info.trainingYears[0],trainingLastYear:info.trainingYears.at(-1),backtest:{scores:{baseline_available:{nTest:info.nTest,nHigh:values.n_high,skill:values.skill,brierScore:values.brier,baselineBrierScore:values.baseline_brier},all_retrospective:{nTest:info.nTestRetrospective,skill:values.skill_all}}}};
   }
@@ -265,14 +268,14 @@
   }
   async function renderOutlook(){
     const all=outlook.targets.filter(t=>t.available),latest=Object.values(liveClimate.latestByMode).sort().at(-1);
-    $('freshness').textContent=`MHW history through 2025 · climate feeds to ${monthLabel(latest)} · IOD to ${monthLabel(liveClimate.latestByMode.IOD)}`;
+    $('freshness').textContent=`Complete-year history through 2025 · 2026 observations in point views · climate feeds to ${monthLabel(latest)} · IOD to ${monthLabel(liveClimate.latestByMode.IOD)}`;
     $('footerFreshness').textContent=`Climate checked ${liveClimate.asOf} · weekly refresh`;
     if(!all.length){$('outlookSubtitle').textContent='Waiting for the required recent climate observations.';$('outlookCards').innerHTML=`<div class="unavailable-outlook">${outlook.targets.map(t=>t.reason||'No dated outlook available.').join(' · ')}</div>`;return;}
     const first=all[0],start=new Date(first.seasonStart+'T00:00:00Z'),end=new Date(first.seasonEnd+'T00:00:00Z');
     const season=`${start.toLocaleDateString('en-GB',{month:'short',year:'numeric',timeZone:'UTC'})} – ${end.toLocaleDateString('en-GB',{month:'short',year:'numeric',timeZone:'UTC'})}`;
     $('outlookSubtitle').textContent=`${season} (${first.season}) · ${first.leadMonths}-month lead · ${state.outlookScope==='pixel'?'individual source-cell history':state.outlookScope==='overall'?'pooled habitat-cell means across the study domain':'habitat-cell means within each ecoregion'}`;
     $('outlookDates').replaceChildren(...[`Issue month: ${monthLabel(first.issueDate.slice(0,7))}`,`Indices used: ${monthLabel(first.predictorFirstMonth)}–${monthLabel(first.predictorLastMonth)}`,`Updated ${outlook.asOf}`,`MHW history: through 2025`].map(text=>{const e=document.createElement('span');e.textContent=text;return e;}));
-    $('outlookDefinition').textContent=`Probability of a high-exposure season: ${state.outlookScope==='pixel'?'MHW days at this source cell':'habitat-cell mean MHW days'} above the training same-season 80th percentile, with a 10-day floor. Fixed six-index model; the delayed IOD feed is displayed separately.`;
+    $('outlookDefinition').textContent=`Probability of a high-exposure season: ${state.outlookScope==='pixel'?'MHW days at this source cell':'habitat-cell mean MHW days'} above the training same-season 80th percentile, with a 10-day floor. ${state.outlookScope==='pixel'&&externalInfo(state.outlookRecord==='GHRSST MUR'?'mur':'oisst')?'The cell model tests an issued ENSO forecast alongside six observed indices.':'Six observed-index model.'} IOD forecasts are displayed separately.`;
     const rows=state.outlookScope==='pixel'?[await pointForecast(state.outlookRecord==='GHRSST MUR'?'mur':'oisst',state.pixel)]:all.filter(t=>t.product===state.outlookRecord&&t.scope===state.outlookScope&&(state.basin==='all'||t.basin===state.basin)&&(state.outlookScope==='overall'||state.region==='all'||t.region===meta.regions[Number(state.region)])&&(state.habitats&(1<<meta.habitats.indexOf(t.habitat)))).sort((a,b)=>meta.basins.findIndex(v=>v.id===a.basin)-meta.basins.findIndex(v=>v.id===b.basin)||meta.regions.indexOf(a.region)-meta.regions.indexOf(b.region)||meta.habitats.indexOf(a.habitat)-meta.habitats.indexOf(b.habitat));
     window.dispatchEvent(new CustomEvent('atlasoutlookchange',{detail:{rows}}));
 
@@ -291,11 +294,12 @@
         const seasonValues=series(pixel,seasonArray,product);seasonal=forecast.trainingYears.map(year=>({year,days:seasonValues[productInfo.years.indexOf(year)]}));
         validation=forecast.testYears.map((year,j)=>({year,probability:predicted[j*forecast.nativeCells+forecast.index],baseline:baseline[j*forecast.nativeCells+forecast.index],observedHigh:observed[j*forecast.nativeCells+forecast.index],days:seasonValues[productInfo.years.indexOf(year)],postBaseline:forecast.postBaselineMask[j]}));
       }
+      if(forecast?.external&&forecast.trainingLastYear===2025){const season=seasonal.find(v=>v.year===2025);if(season)season.days=forecast.external.latest_season_days;const last=validation.find(v=>v.year===2025);if(last)last.days=forecast.external.latest_season_days;}
       const habitats=meta.habitats.filter((_,j)=>point[2]&(1<<j));
       const context=outlook.targets.filter(t=>t.available&&t.product===productInfo.name&&t.basin===pointBasin(point).id&&habitats.includes(t.habitat)&&(t.scope==='overall'||t.region===meta.regions[point[3]]));
       await window.AtlasReports.create({pixel:pixelId(pixel),latitude:point[1],longitude:point[0],habitats,region:meta.regions[point[3]],product:productInfo,
         source:productInfo.cells[sourceIndex(pixel,product)],distance:point[product==='mur'?6:7],metric,metricInfo:metricInfo[metric],histories,forecast,validation,seasonal,context,
-        association,scenarios:window.AtlasScenarios?.compute(),detail:await window.AtlasDetails?.load(pixel,product),observed2026:await window.AtlasObserved2026?.forPoint(pixel,product),dailyClimate:await window.AtlasDetails?.climate(),updated:outlook.asOf,liveClimate,webUrl:`https://adawy2050.github.io/redsea-habitat-mhw-atlas/?lat=${point[1]}&lon=${point[0]}&product=${product}`});
+        association,scenarios:window.AtlasScenarios?.compute(),detail:await window.AtlasDetails?.load(pixel,product),observed2026:await window.AtlasObserved2026?.forPoint(pixel,product),externalForecasts:await window.AtlasExternalForecasts?.data(),dailyClimate:await window.AtlasDetails?.climate(),updated:outlook.asOf,liveClimate,webUrl:`https://adawy2050.github.io/redsea-habitat-mhw-atlas/?lat=${point[1]}&lon=${point[0]}&product=${product}`});
       note('Point report downloaded.');
     }catch(error){console.error(error);note(`Report could not be created: ${error.message}`);}
     finally{button.disabled=false;button.textContent='Create point report (PDF) ';}
@@ -320,7 +324,7 @@
   function yearChanged(){state.year=Number($('year').value);pixelLayer.draw();window.dispatchEvent(new Event('atlasmapyearchange'));updateMapText();Plotly.relayout('historyPlot',{'shapes[0].x0':state.year,'shapes[0].x1':state.year}).catch(()=>{});}
   function bind() {
     window.addEventListener('atlaslanguagechange',()=>{renderHistory();renderModel();renderClimate();});
-    $('product').onchange=()=>{stop();state.product=$('product').value;forecastAvailability();setYearControls();renderMap();renderClimate();};
+    $('product').onchange=()=>{stop();state.product=$('product').value;state.outlookRecord=meta.products[state.product].name;$('outlookRecord').value=state.outlookRecord;forecastAvailability();setYearControls();renderMap();renderClimate();renderOutlook();};
     $('metric').onchange=()=>{stop();if($('metric').value==='outlook_probability')state.mapMode='probability';else{state.mapMode='history';state.metric=$('metric').value;}renderMap();};
     $('basemap').onchange=()=>{if($('basemap').value!=='coastline'){map.removeLayer(landLayer);satelliteLayer.addTo(map);}else{map.removeLayer(satelliteLayer);landLayer.addTo(map);}};
     document.querySelectorAll('input[name="coverage"]').forEach(el=>el.onchange=()=>{el.checked?coverageLayers[el.value].addTo(map):map.removeLayer(coverageLayers[el.value]);});
@@ -349,7 +353,7 @@
     $('outlookScope').onchange=()=>{state.outlookScope=$('outlookScope').value;renderOutlook();};
     $('showPointOutlook').onclick=()=>{state.outlookScope='pixel';state.outlookRecord=meta.products[state.product].name;$('outlookScope').value='pixel';$('outlookRecord').value=state.outlookRecord;renderOutlook();$('outlook').scrollIntoView({behavior:'smooth'});};
     $('createReport').onclick=createPointReport;
-    $('downloadOutlook').onclick=()=>download('seasonal_outlook.json',JSON.stringify(outlook,null,2),'application/json');
+    $('downloadOutlook').onclick=()=>download('seasonal_outlook.json',JSON.stringify({...outlook,externalCellModels:externalModels},null,2),'application/json');
     $('pairedIndex').replaceChildren(...[...climate.modes,'localSst'].map(m=>new Option(labels[m],m)));
     $('indexChips').replaceChildren(...climate.modes.map(m=>{const label=document.createElement('label');label.className='index-chip';const input=document.createElement('input');input.type='checkbox';input.checked=state.selectedModes.has(m);input.value=m;input.onchange=()=>{input.checked?state.selectedModes.add(m):state.selectedModes.delete(m);renderClimate();};const dot=document.createElement('i');dot.style.background=modeColors[m];label.append(input,dot,document.createTextNode(labels[m]));return label;}));
     for(const id of ['methodsOpen','methodsFooter','modelHelp'])$(id).onclick=showMethods;
@@ -365,19 +369,21 @@
   function nearest(lat,lon,onlyVisible=false){let best=-1,distance=Infinity;for(let i=0;i<pixels.length;i++){const p=pixels[i];if(onlyVisible&&!visible(p))continue;const d=(p[1]-lat)**2+((p[0]-lon)*Math.cos(lat*Math.PI/180))**2;if(d<distance){distance=d;best=i;}}return best;}
   function filterChanged(){pixelLayer.draw();renderOutlook();if(!visible(pixels[state.pixel])){const index=pixels.findIndex(visible);if(index>=0)selectPixel(index);else note('Select at least one habitat to display cells.');}if(state.region!=='all'){const pts=pixels.filter(visible);if(pts.length)map.fitBounds(L.latLngBounds(pts.map(p=>[p[1],p[0]])),{padding:[70,65]});}}
   async function init(){
-    try{[meta,climate]=await Promise.all([json('./data/metadata.json'),json('./data/climate.json')]);const [points,land,coverage,latest,seasonal]=await Promise.all([json('./data/pixels.json'),json('./data/land.geojson'),json('./coverage/index.json'),json('./data/climate_latest.json'),json('./data/outlook.json')]);pixels=points.rows;coverageMeta=coverage;liveClimate=latest;outlook=seasonal;
+    try{[meta,climate]=await Promise.all([json('./data/metadata.json'),json('./data/climate.json')]);const [points,land,coverage,latest,seasonal,issued]=await Promise.all([json('./data/pixels.json'),json('./data/land.geojson'),json('./coverage/index.json'),json('./data/climate_latest.json'),json('./data/outlook.json'),json('./forecasts/cell_models.json').catch(()=>null)]);pixels=points.rows;coverageMeta=coverage;liveClimate=latest;outlook=seasonal;externalModels=issued;
       climateZ=Object.fromEntries(climate.modes.map(m=>[m,S.standardize(climate.annual.values[m].filter((_,i)=>climate.annual.years[i]>=1982))]));
       const params=new URLSearchParams(location.search);if(['mur','oisst'].includes(params.get('product')))state.product=params.get('product');$('product').value=state.product;if(params.get('variable')==='outlook_probability'){state.mapMode='probability';$('metric').value='outlook_probability';}else if(meta.metrics.includes(params.get('variable'))){state.metric=params.get('variable');$('metric').value=state.metric;}
       if(meta.basins.some(b=>b.id===params.get('basin')))state.basin=params.get('basin');$('basin').value=state.basin;regionControls();
       state.pixel=params.has('lat')&&params.has('lon')?nearest(Number(params.get('lat')),Number(params.get('lon')),true):nearest(21.4,39.05,true);
       if(!visible(pixels[state.pixel]))state.pixel=pixels.findIndex(visible);
-      forecastAvailability();makeMap(land);setYearControls();bind();$('climateSource').value='latest';$('climateStep').value='monthly';climateDateControls();renderLatestIndices();await renderMap();renderClimate();renderOutlook();document.documentElement.dataset.ready='true';window.dispatchEvent(new Event('atlasready'));
+      state.outlookRecord=meta.products[state.product].name;$('outlookRecord').value=state.outlookRecord;forecastAvailability();makeMap(land);setYearControls();bind();$('climateSource').value='latest';$('climateStep').value='monthly';climateDateControls();renderLatestIndices();await renderMap();renderClimate();renderOutlook();document.documentElement.dataset.ready='true';window.dispatchEvent(new Event('atlasready'));
     }catch(e){console.error(e);$('loadingText').textContent=`Atlas could not open: ${e.message}. Please reload.`;document.documentElement.dataset.error=e.message;}
   }
   window.AtlasUI={
     snapshot(){return {state:{...state},meta,pixels,climate,liveClimate,outlook,model:modelData,point:pixels[state.pixel],sourceIndex:sourceIndex(state.pixel),oisstIndex:sourceIndex(state.pixel,'oisst')};},
     array:(p,m)=>m.startsWith('outlook_')?forecastArray(p,m.slice(8)):array(p,m),series,nearest,selectPixel,visible,mapInfo,pixelId,color,forecast:pointForecast,
     get map(){return map;},get fallbackLand(){return landLayer;},get satellite(){return satelliteLayer;},
+    setOutlookInputs(value){outlookInputs=value;renderMap();renderOutlook();window.dispatchEvent(new Event('atlasforecastinputschange'));},
+    hasIssuedForecast:product=>!!externalInfo(product,true),
     setYear(year){if(year===state.year||!meta.products[state.product].years.includes(year)||state.mapMode==='probability')return;$('year').value=year;yearChanged();},
     setRange(from,to){state.from=Math.max(meta.products[state.product].years[0],Math.ceil(from));state.to=Math.min(2025,Math.floor(to));if(state.from>state.to)return;$('fromYear').value=state.from;$('toYear').value=state.to;renderHistory();renderModel();window.dispatchEvent(new Event('atlasrangechange'));},
     redraw(){pixelLayer.draw();},

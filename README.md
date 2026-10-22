@@ -9,8 +9,8 @@ A static atlas of **210,680 habitat cells** across the Red Sea, Arabian Gulf, Ea
 - Start with a map rectangle or select any of the three study areas and their MEOW ecoregions.
 - Animate annual habitat-cell maps for six marine heatwave metrics.
 - Distinguish solid observed series from dotted annual model fits; toggle fitted linear trends in history and climate charts.
-- Switch between satellite imagery and a coastline basemap; show separate coral, seagrass and mangrove coverage maps.
-- Click a cell to inspect its source SST coordinate and sampling distance.
+- Blend satellite imagery with the detailed shoreline using independent opacity controls. Seagrass starts off; coral, mangrove and kelp layers start on.
+- Click a cell to open a large analysis window with its history, 2026 observations, climate links, outlook and PDF report.
 - Compare up to five pinned cells with the selected cell.
 - Fit annual pixel histories to seven climate indices and either a time trend or local annual OISST SST.
 - Inspect Shapley R² shares, observed/fitted histories and leave-one-year-out fit.
@@ -24,7 +24,7 @@ A static atlas of **210,680 habitat cells** across the Red Sea, Arabian Gulf, Ea
 - View newly released NOAA monthly indices while preserving the manuscript's historical climate archive.
 - Switch between English and Arabic at the top; Arabic uses a right-to-left layout, translated controls, chart labels and methods. The choice persists and can be shared with `?lang=ar` or `?lang=en`.
 - Set the climate chart's own date range, jump to the current year, or view annual means including clearly labelled partial years. Latest-month cards retain each index's actual publication date.
-- Open Red Sea and Arabian Gulf photographs at their original resolution, with photographer and open-licence credits beside each image.
+- Browse 470 openly licensed photographs across all three study areas, with nearby locations, source links, photographer credits and original-resolution viewing.
 
 GHRSST MUR is the first view (2003–2025, 0.01°, baseline 2003–2022). OISST provides the longer record (1982–2025, 0.25°, baseline 1982–2011). The map locations remain habitat grid cells; selecting OISST does not increase its native SST resolution.
 
@@ -41,7 +41,7 @@ Open http://localhost:8765. No Node installation, build step, API key or databas
 
 The included `.github/workflows/pages.yml` publishes `dist/` after pushes to `main`. In repository **Settings → Pages**, set **Source** to **GitHub Actions**. Every path supports a GitHub Pages project subdirectory.
 
-The same workflow refreshes NOAA climate observations and seasonal models at habitat, ecoregion and individual source-cell scales each Monday at 00:20 UTC (09:20 JST), and on manual dispatch. It commits the updated feed, forecast arrays, outlook and checksum files before deploying. Failed downloads leave the previous successful published version intact. MHW pixel observations remain the study record through 2025; they are not automatically extended by this climate-only job.
+The same workflow refreshes NOAA climate observations and seasonal models at habitat, ecoregion and individual source-cell scales each Monday at 00:20 UTC (09:20 JST), and on manual dispatch. It commits the updated feed, forecast arrays, outlook and checksum files before deploying. Failed downloads leave the previous successful published version intact. Complete-year study arrays end in 2025; the separate 2026 observation extension uses the server download and QC pipeline.
 
 The current IOD archive is delayed. A fixed six-index panel (Niño-3.4, NAO, AO, EAWR, North Atlantic SST anomaly and PDO) supplies the dated seasonal outlook, with its own nested chronological backtest. The seventh index remains available in the historical analysis and latest-feed charts. Model probabilities are shown with a historical baseline and Brier skill, rather than validated alert categories.
 
@@ -77,13 +77,13 @@ The combined builder reads `_cache/redsea_atlas_base` (the preserved original di
 
 ## Sources and attribution
 
-Ahmed Eladawy. Contact: ahmed.eladawy@jamstec.go.jp. SST: NASA/JPL GHRSST MUR v4.1 and NOAA OISST v2.1. Habitat inventories: UNEP-WCMC Ocean+ Habitats (coral 2021, seagrass 2021, mangroves 2010). Climate: NOAA CPC, PSL and NCEI ERSSTv5. Satellite imagery: Esri, Vantor, Earthstar Geographics and the GIS User Community. Coastline: Natural Earth public-domain land vectors. Leaflet 1.9.4, Plotly.js 2.35.2, jsPDF 4.2.1 and jsPDF-AutoTable 5.0.8 are vendored with their original license notices. Original data providers' use and attribution terms continue to apply. This repository contains sampled numerical habitat-cell values and rendered coverage maps, not the original habitat polygon datasets or cached satellite imagery.
+Ahmed Eladawy. Contact: ahmed.eladawy@jamstec.go.jp. SST: NASA/JPL GHRSST MUR v4.1 and NOAA OISST v2.1. Habitat inventories: UNEP-WCMC Ocean+ Habitats (coral 2021, seagrass 2021, mangroves 2010). Climate: NOAA CPC, PSL and NCEI ERSSTv5. Satellite imagery: Esri, Vantor, Earthstar Geographics and the GIS User Community. Coastline: GSHHG 2.3.7 under LGPL, with Natural Earth public-domain fallback. Detailed GSHHG vertices are retained in lazy map tiles. Leaflet 1.9.4, Plotly.js 2.35.2, jsPDF 4.2.1 and jsPDF-AutoTable 5.0.8 are vendored with their original license notices. Original data providers' use and attribution terms continue to apply. This repository contains sampled numerical habitat-cell values and rendered coverage maps, not the original habitat polygon datasets or cached satellite imagery.
 
-The photo collection includes Red Sea reefs, seagrass and Farasan mangroves; Arabian Gulf reefs, UAE and Qatar mangroves; real satellite views; and clearly labelled bleaching comparisons from other regions. Verified originals, responsive AVIF/WebP/JPEG previews, sources, photographers and licences are retained in [`dist/images/credits.json`](dist/images/credits.json) and [`PHOTO_AUDIT.md`](dist/images/PHOTO_AUDIT.md). Original photos are unedited. Their licences apply independently of the portal code. The viewer supports full native pixels, pan, download and keyboard navigation. Photos illustrate habitats and do not describe the selected pixel's condition.
+The 470-photo collection includes Red Sea reefs, seagrass and Farasan mangroves; Arabian Gulf reefs, UAE and Qatar mangroves; real satellite views; and clearly labelled bleaching comparisons from other regions. Full originals are retained locally in `D:\Red Sea paper\atlas-photo-library`, with SHA-256 hashes and source download URLs. Compact previews are hosted on Pages. Sources, photographers and licences are retained in [`dist/images/credits.json`](dist/images/credits.json) and [`PHOTO_AUDIT.md`](dist/images/PHOTO_AUDIT.md). Original photos are unedited. Their licences apply independently of the portal code. The viewer supports full native pixels, pan, download and keyboard navigation. Photos illustrate habitats and do not describe the selected pixel's condition.
 
 ## Editing the research and news sections
 
-`dist/content/papers.json` contains 26 published-paper entries, paged ten at a time. Each entry has a DOI, publisher title, Arabic title, journal, year and topic (`regional`, `habitats`, `methods`, `forecast`). `dist/content/news.json` contains dated source links with reviewed English/Arabic titles and short summaries. Add or edit entries using the existing structure. No API key or runtime third-party photo embed is needed.
+`dist/content/papers.json` contains 29 published-paper entries, paged ten at a time. Regional papers and news follow the selected study area. A `basins` list determines which area shows each item; empty lists retain general references in the source catalogue. Each paper has a DOI, publisher title, Arabic title, journal, year and topic (`regional`, `habitats`, `methods`, `forecast`). `dist/content/news.json` contains dated source links with reviewed English/Arabic titles and short summaries. Add or edit entries using the existing structure. No API key or runtime third-party photo embed is needed.
 
 After editing source modules locally, run in PowerShell:
 
@@ -126,3 +126,13 @@ The atlas adds separately checked 2026 observations through20October2026. OISST 
 Click a habitat point to open the large analysis window, including history, daily/monthly data, climate links, seasonal outlook,2026observations and a PDF report. Satellite imagery and GSHHG shoreline have independent opacity controls. Seagrass is off by default; coral, mangroves and kelp remain enabled. GSHHG2.3.7full-resolution vertices are loaded only for visible detailed tiles; a global simplified overview is used at low zoom. Scientific analysis masks are unchanged.
 
 2026 remains separate from complete annual model training. January–September heatwave-day comparisons use the same completed months in every year. New monthly and regional summaries are generated by `scripts/observed2026_summaries.py`. The point report retains source-grid resolution and marks preliminary observations and recent event membership.
+
+## October 2026 update
+
+Certified daily SST, heatwave membership and monthly counts through 20 October 2026 are delivered separately in `dist/observed2026/`. OISST is complete; MUR is downloaded and checked by an isolated server worker. The public `/status/` page follows its progress. Each product starts analysis immediately after download, and a server publisher verifies and publishes the finished update without depending on the local computer. The daily/monthly point views and PDFs include the new observations. Partial 2026 values do not replace complete-year annual-model training.
+
+`external_index_forecasts.py` downloads forecasts already issued by Columbia/IRI and JAMSTEC. The public IRI SVG preserves plotted numerical vertices; its labelled combined-average curve is recovered to 0.01 °C, with source hashes. The matching issue-month archive begins in 2004. JAMSTEC supplies monthly Niño-3.4 and IOD forecasts and model members into 2027. Source anomalies and reference periods are retained.
+
+`forecast_index_models.py` tests the issued ENSO forecast as an extra input to each cell's six-index ridge model. Thresholds, detrending, scaling, regularisation, blend selection and the promotion gate use earlier seasons only. Both candidates use the same target definition. At least eight earlier post-baseline test seasons and a lower past Brier score are required before adding the forecast. The gate is repeated inside historical tests. A new completed DJF season can be added from certified January–February observations. Its December 2025 tail is checked against January 2026 so events crossing the former record boundary are included; the archived study arrays remain unchanged. Current IOD forecasts are shown but are not a fitted cell-model input without a matching issue archive. `verify_forecast_indices.py` checks public-figure extraction and independent point refits.
+
+The Monday GitHub job refreshes climate observations, published index forecasts, cell comparisons and source catalogues. Bulk SST observations use the server download/QC pipeline, not the climate-only GitHub job. Missing or failed feeds preserve the last successful files; a forecast is used only when its issue month and target season match the current outlook.

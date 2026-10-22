@@ -17,12 +17,15 @@
       "verified": "2026-10-18",
       "crossrefType": "journal-article",
       "titleAr": "الموجات الحارة البحرية تكشف مناطق الشعاب المعرضة للابيضاض في البحر الأحمر",
-      "topic": "regional"
+      "topic": "regional",
+      "basins": [
+        "redsea"
+      ]
     },
     {
       "doi": "10.1038/s43247-025-02096-5",
       "title": "Drivers of marine heatwaves in coral bleaching regions of the Red Sea",
-      "journal": "Communications Earth &amp; Environment",
+      "journal": "Communications Earth & Environment",
       "year": 2025,
       "authors": [
         "Sofia Darmaraki",
@@ -35,7 +38,10 @@
       "verified": "2026-10-18",
       "crossrefType": "journal-article",
       "titleAr": "محركات الموجات الحارة البحرية في مناطق ابيضاض المرجان بالبحر الأحمر",
-      "topic": "regional"
+      "topic": "regional",
+      "basins": [
+        "redsea"
+      ]
     },
     {
       "doi": "10.1038/s41598-025-17669-9",
@@ -51,7 +57,10 @@
       "verified": "2026-10-18",
       "crossrefType": "journal-article",
       "titleAr": "اشتداد الموجات الحارة البحرية ومحركاتها المناخية في الخليج العربي",
-      "topic": "regional"
+      "topic": "regional",
+      "basins": [
+        "gulf"
+      ]
     },
     {
       "doi": "10.1016/j.rsma.2026.105384",
@@ -68,7 +77,10 @@
       "verified": "2026-10-18",
       "crossrefType": "journal-article",
       "titleAr": "اشتداد الموجات الحارة البحرية في الخليج: الاتجاهات والمحركات والآثار البيئية",
-      "topic": "regional"
+      "topic": "regional",
+      "basins": [
+        "gulf"
+      ]
     },
     {
       "doi": "10.1016/j.pocean.2015.12.014",
@@ -96,7 +108,8 @@
       "verified": "2026-10-18",
       "crossrefType": "journal-article",
       "titleAr": "نهج هرمي لتعريف الموجات الحارة البحرية",
-      "topic": "methods"
+      "topic": "methods",
+      "basins": []
     },
     {
       "doi": "10.1038/s41467-018-03732-9",
@@ -124,7 +137,8 @@
       "verified": "2026-10-18",
       "crossrefType": "journal-article",
       "titleAr": "موجات حارة بحرية أطول وأكثر تكرارًا خلال القرن الماضي",
-      "topic": "methods"
+      "topic": "methods",
+      "basins": []
     },
     {
       "doi": "10.1038/s41558-019-0412-1",
@@ -155,7 +169,8 @@
       "verified": "2026-10-18",
       "crossrefType": "journal-article",
       "titleAr": "الموجات الحارة البحرية تهدد التنوع الحيوي والخدمات البيئية عالميًا",
-      "topic": "habitats"
+      "topic": "habitats",
+      "basins": []
     },
     {
       "doi": "10.1038/s41467-019-10206-z",
@@ -183,7 +198,8 @@
       "verified": "2026-10-18",
       "crossrefType": "journal-article",
       "titleAr": "تقييم عالمي للموجات الحارة البحرية ومحركاتها",
-      "topic": "methods"
+      "topic": "methods",
+      "basins": []
     },
     {
       "doi": "10.1038/s41586-018-0383-9",
@@ -199,7 +215,8 @@
       "verified": "2026-10-18",
       "crossrefType": "journal-article",
       "titleAr": "الموجات الحارة البحرية في ظل الاحترار العالمي",
-      "topic": "methods"
+      "topic": "methods",
+      "basins": []
     },
     {
       "doi": "10.1038/s41467-018-03163-6",
@@ -214,7 +231,8 @@
       "verified": "2026-10-18",
       "crossrefType": "journal-article",
       "titleAr": "المخاطر الناشئة عن الموجات الحارة البحرية",
-      "topic": "methods"
+      "topic": "methods",
+      "basins": []
     },
     {
       "doi": "10.5670/oceanog.2018.205",
@@ -239,7 +257,8 @@
       "verified": "2026-10-18",
       "crossrefType": "journal-article",
       "titleAr": "تصنيف الموجات الحارة البحرية وتسميتها",
-      "topic": "methods"
+      "topic": "methods",
+      "basins": []
     },
     {
       "doi": "10.1038/nature21707",
@@ -298,7 +317,8 @@
       "verified": "2026-10-18",
       "crossrefType": "journal-article",
       "titleAr": "الاحترار العالمي وتكرار الابيضاض الجماعي للمرجان",
-      "topic": "habitats"
+      "topic": "habitats",
+      "basins": []
     },
     {
       "doi": "10.1038/s41586-018-0041-2",
@@ -327,7 +347,8 @@
       "verified": "2026-10-18",
       "crossrefType": "journal-article",
       "titleAr": "الاحترار العالمي يغير تجمعات الشعاب المرجانية",
-      "topic": "habitats"
+      "topic": "habitats",
+      "basins": []
     },
     {
       "doi": "10.1038/s41558-018-0096-y",
@@ -354,7 +375,8 @@
       "verified": "2026-10-18",
       "crossrefType": "journal-article",
       "titleAr": "موجة حارة بحرية تتسبب في فقد كبير من مخزون كربون الأعشاب البحرية",
-      "topic": "habitats"
+      "topic": "habitats",
+      "basins": []
     },
     {
       "doi": "10.1071/MF16322",
@@ -376,7 +398,8 @@
       "verified": "2026-10-18",
       "crossrefType": "journal-article",
       "titleAr": "نفوق واسع للمانغروف في خليج كاربنتاريا الأسترالي خلال طقس متطرف",
-      "topic": "habitats"
+      "topic": "habitats",
+      "basins": []
     },
     {
       "doi": "10.1146/annurev-marine-032720-095144",
@@ -397,7 +420,8 @@
       "verified": "2026-10-18",
       "crossrefType": "journal-article",
       "titleAr": "الموجات الحارة البحرية: مراجعة علمية",
-      "topic": "methods"
+      "topic": "methods",
+      "basins": []
     },
     {
       "doi": "10.1016/j.cub.2019.06.077",
@@ -422,7 +446,8 @@
       "verified": "2026-10-18",
       "crossrefType": "journal-article",
       "titleAr": "التحلل السريع للمرجان المرتبط بالنفوق أثناء الموجات الحارة البحرية",
-      "topic": "habitats"
+      "topic": "habitats",
+      "basins": []
     },
     {
       "doi": "10.1016/j.rse.2017.07.029",
@@ -438,7 +463,8 @@
       "verified": "2026-10-18",
       "crossrefType": "journal-article",
       "titleAr": "تحليل متعدد المقاييس وعالي الدقة لحرارة سطح البحر عالميًا",
-      "topic": "methods"
+      "topic": "methods",
+      "basins": []
     },
     {
       "doi": "10.1038/s41586-022-04573-9",
@@ -460,7 +486,8 @@
       "verified": "2026-10-18",
       "crossrefType": "journal-article",
       "titleAr": "توقعات موسمية عالمية للموجات الحارة البحرية",
-      "topic": "forecast"
+      "topic": "forecast",
+      "basins": []
     },
     {
       "doi": "10.1038/s41467-024-49307-9",
@@ -486,7 +513,8 @@
       "verified": "2026-10-18",
       "crossrefType": "journal-article",
       "titleAr": "الآثار العالمية للموجات الحارة البحرية على الأنواع المؤسسة للموائل الساحلية",
-      "topic": "habitats"
+      "topic": "habitats",
+      "basins": []
     },
     {
       "doi": "10.1016/j.rsma.2023.102934",
@@ -505,7 +533,10 @@
       "verified": "2026-10-18",
       "crossrefType": "journal-article",
       "titleAr": "خصائص الموجات الحارة البحرية في الفلبين",
-      "topic": "regional"
+      "topic": "regional",
+      "basins": [
+        "eastasia"
+      ]
     },
     {
       "doi": "10.1029/2021jc017792",
@@ -520,7 +551,10 @@
       "verified": "2026-10-18",
       "crossrefType": "journal-article",
       "titleAr": "تباين الموجات الحارة البحرية الصيفية في بحر الصين الجنوبي",
-      "topic": "regional"
+      "topic": "regional",
+      "basins": [
+        "eastasia"
+      ]
     },
     {
       "doi": "10.1016/j.accre.2022.04.003",
@@ -536,7 +570,10 @@
       "verified": "2026-10-18",
       "crossrefType": "journal-article",
       "titleAr": "الموجات الحارة الصيفية في بحر الصين الجنوبي: الاتجاه والتباين والأسباب المحتملة",
-      "topic": "regional"
+      "topic": "regional",
+      "basins": [
+        "eastasia"
+      ]
     },
     {
       "doi": "10.1038/s41598-024-65291-y",
@@ -557,7 +594,10 @@
       "verified": "2026-10-18",
       "crossrefType": "journal-article",
       "titleAr": "أثر موجة حارة بحرية غير مسبوقة في صيف شمال اليابان شديد الحرارة عام 2023",
-      "topic": "regional"
+      "topic": "regional",
+      "basins": [
+        "eastasia"
+      ]
     },
     {
       "doi": "10.1029/2025jc023614",
@@ -574,7 +614,10 @@
       "verified": "2026-10-18",
       "crossrefType": "journal-article",
       "titleAr": "ازدياد تكرار الموجات الحارة البحرية ومدتها وعمقها في جنوب شرق آسيا",
-      "topic": "regional"
+      "topic": "regional",
+      "basins": [
+        "eastasia"
+      ]
     },
     {
       "doi": "10.3390/rs13193989",
@@ -589,7 +632,79 @@
       "verified": "2026-10-18",
       "crossrefType": "journal-article",
       "titleAr": "موجات حارة بحرية واسعة في شمال غرب المحيط الهادئ صيف 2021",
-      "topic": "regional"
+      "topic": "regional",
+      "basins": [
+        "eastasia"
+      ]
+    },
+    {
+      "doi": "10.1007/s10872-026-00787-x",
+      "title": "Marine heatwaves around Japan over the past four decades: Links to interannual-to-decadal variability of sea surface temperature",
+      "journal": "Journal of Oceanography",
+      "year": 2026,
+      "authors": [
+        "Yusuke Ushijima",
+        "Kei Sakamoto",
+        "Koji Yagi",
+        "Yuma Kawakami",
+        "Hiroki Togawa",
+        "Haruka Sasaki",
+        "Yoshikazu Fukuda"
+      ],
+      "url": "https://doi.org/10.1007/s10872-026-00787-x",
+      "verified": "2026-10-22",
+      "crossrefType": "journal-article",
+      "titleAr": "الموجات الحارة حول اليابان وعلاقتها بتقلب حرارة سطح البحر",
+      "topic": "regional",
+      "basins": [
+        "eastasia"
+      ]
+    },
+    {
+      "doi": "10.1038/s41598-026-65095-2",
+      "title": "Widespread coral bleaching across subtropical and temperate Japan under record marine heat stress",
+      "journal": "Scientific Reports",
+      "year": 2026,
+      "authors": [
+        "Haruko Kurihara",
+        "Hiroya Yamano",
+        "Kohsaku Yokoyama",
+        "Sayaka Yasunaka",
+        "Nina Yasuda",
+        "Chuki Hongo",
+        "Masako Nakamura",
+        "Teruki Nagamine"
+      ],
+      "url": "https://doi.org/10.1038/s41598-026-65095-2",
+      "verified": "2026-10-22",
+      "crossrefType": "journal-article",
+      "titleAr": "ابيضاض المرجان في اليابان تحت إجهاد حراري بحري قياسي",
+      "topic": "habitats",
+      "basins": [
+        "eastasia"
+      ]
+    },
+    {
+      "doi": "10.5194/os-21-3241-2025",
+      "title": "Local and remote climatic drivers of extreme summer sea surface temperatures in the Arabian Gulf",
+      "journal": "Ocean Science",
+      "year": 2025,
+      "authors": [
+        "Zouhair Lachkar",
+        "Olivier Pauluis",
+        "Francesco Paparella",
+        "Basit Khan",
+        "John A. Burt"
+      ],
+      "url": "https://doi.org/10.5194/os-21-3241-2025",
+      "verified": "2026-10-22",
+      "crossrefType": "journal-article",
+      "titleAr": "المحركات المحلية والبعيدة لحرارة سطح البحر الصيفية الشديدة في الخليج العربي",
+      "topic": "regional",
+      "basins": [
+        "gulf"
+      ]
     }
-  ]
+  ],
+  "areaFiltering": "Regional items follow the map selection. Global references remain in the editable catalogue."
 }

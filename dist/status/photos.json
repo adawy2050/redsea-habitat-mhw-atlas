@@ -1,15 +1,1 @@
-{
-  "searches": 995,
-  "candidateCount": 1607,
-  "targetNew": 423,
-  "stage": "discovery",
-  "updated": "2026-10-22T08:01:41.119642+00:00",
-  "downloadedNew": 784,
-  "acceptedNew": 414,
-  "total": 461,
-  "targetTotal": 470,
-  "originalBytes": 4309406714,
-  "reviewedNew": 271,
-  "curatedTotal": 318,
-  "reviewedCandidates": 630
-}
+{"stage": "Complete", "curatedTotal": 470, "completed": 470, "target": 470, "updated": "2026-10-22"}

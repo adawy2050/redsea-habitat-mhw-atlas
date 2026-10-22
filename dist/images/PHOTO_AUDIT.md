@@ -1,3 +1,5 @@
+> The library expanded to 470 photographs on 22 October 2026. See [the expansion audit](PHOTO_EXPANSION_2026.md). The audit below describes the original collection.
+
 # Photograph audit
 
 Verified from Wikimedia Commons imageinfo metadata on 18 October 2026. Original JPEGs are unmodified; responsive derivatives are resized/compressed only. Original photographs; previews resized only.

@@ -49,10 +49,12 @@ def publish():
     assert manifest['independentQCComplete'] and manifest['allProductsComplete']
     assert set(manifest['products'])=={'mur','oisst'}
     assert len(json.loads((ROOT/'dist/data/metadata.json').read_text(encoding='utf8'))['products']['mur']['cells'])==166771
-    run(sys.executable,'scripts/observed2026_summaries.py');run(sys.executable,'scripts/build_assets.py');run(sys.executable,'scripts/verify_assets.py');run(sys.executable,'scripts/verify.py')
+    run(sys.executable,'scripts/observed2026_summaries.py')
+    run(sys.executable,'scripts/forecast_index_models.py');run(sys.executable,'scripts/verify_forecast_indices.py')
+    run(sys.executable,'scripts/build_assets.py');run(sys.executable,'scripts/verify_assets.py');run(sys.executable,'scripts/verify.py')
     total=sum(p.stat().st_size for p in (ROOT/'dist').rglob('*') if p.is_file());assert total<1024**3,'The site exceeds the GitHub Pages size budget.'
-    run('git','add','dist/observed2026','dist/asset-manifest.json')
-    allowed=git('diff','--cached','--name-only').splitlines();assert all(p.startswith('dist/observed2026/') or p=='dist/asset-manifest.json' for p in allowed)
+    run('git','add','dist/observed2026','dist/forecasts','dist/asset-manifest.json')
+    allowed=git('diff','--cached','--name-only').splitlines();assert all(p.startswith(('dist/observed2026/','dist/forecasts/')) or p=='dist/asset-manifest.json' for p in allowed)
     if allowed:run('git','commit','-q','-m','Add checked 2026 MUR habitat observations for all study areas')
     sha=git('rev-parse','HEAD');run('git','push','origin','main');workflow=deploy(sha)
     result={'status':'deployed','updatedUtc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'commit':sha,'workflow':workflow,'url':'https://adawy2050.github.io/redsea-habitat-mhw-atlas/','products':list(manifest['products'])}

@@ -24,6 +24,10 @@ def main():
  a=argparse.ArgumentParser();a.add_argument('--verify-only',action='store_true');args=a.parse_args();out=ROOT/'dist/observed2026';out.mkdir(parents=True,exist_ok=True)
  if not args.verify_only:
   c=connection()
+  f=c.open_sftp();f.put(str(ROOT/'scripts/observed2026_boundary_remote.py'),REMOTE+'/boundary.py');f.close()
+  _,stdout,stderr=c.exec_command('cd '+shlex.quote(REMOTE)+' && python boundary.py --root '+shlex.quote(REMOTE),timeout=300)
+  message=stdout.read().decode();error=stderr.read().decode();assert stdout.channel.recv_exit_status()==0,error
+  print(message.strip(),flush=True)
   code=f'''from pathlib import Path
 import hashlib,io,json,tarfile
 root=Path({REMOTE!r})/'public';manifest=json.loads((root/'manifest.json').read_text());data=json.dumps(manifest,ensure_ascii=False,separators=(',',':')).encode()
