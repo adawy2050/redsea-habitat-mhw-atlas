@@ -7,8 +7,8 @@
   <script>try{const r=document.documentElement,l=new URLSearchParams(location.search).get('lang')||localStorage.getItem('atlas-language');if(l){r.lang=l;r.dir=['ar','fa'].includes(l)?'rtl':'ltr';}r.dataset.theme=localStorage.getItem('atlas-theme')==='dark'?'dark':'light';}catch{}</script>
   <meta name="theme-color" content="#102f37">
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./vendor/leaflet.css"><link rel="stylesheet" href="./interface.css?v=20261022-forecast-r2">
-  <script defer src="./language.js?v=20261022-forecast-r2"></script><script defer src="./boot.js?v=20261022-forecast-r2"></script>
+  <link rel="stylesheet" href="./vendor/leaflet.css"><link rel="stylesheet" href="./interface.css?v=20261022-forecast-r3">
+  <script defer src="./language.js?v=20261022-forecast-r3"></script><script defer src="./boot.js?v=20261022-forecast-r3"></script>
 
 
 </head>
@@ -72,7 +72,7 @@
       <div class="climate-next-season"><div><span class="eyebrow">NEXT SEASON · SELECTED POINT</span><h3 id="climateNextTitle">Loading the seasonal model…</h3><p id="climateNextDetail"></p></div><a href="#outlook" class="button outline">Habitat and regional outlooks </a></div>
     </section>
     <section class="analysis-section" id="habitats">
-      <div class="section-heading"><div><span class="eyebrow">LIFE ALONG TWO SEAS</span><h2>Habitats in focus</h2><p>Original photographs, real locations. Open any image to explore its full detail.</p></div><div class="gallery-controls"><label>Photo collection<select id="photoBasin"><option value="all">All photographs</option><option value="redsea">Red Sea</option><option value="gulf">Arabian Gulf</option><option value="representative">Bleaching elsewhere</option></select></label><button id="photoPrev" aria-label="Previous photographs"></button><button id="photoPlay">Play slideshow</button><button id="photoNext" aria-label="Next photographs"></button><span id="photoPage" aria-live="polite"></span></div></div>
+      <div class="section-heading"><div><span class="eyebrow">COASTAL HABITATS</span><h2>Habitats in focus</h2><p>Original photographs, real locations. Open any image to explore its full detail.</p></div><div class="gallery-controls"><label>Photo collection<select id="photoBasin"><option value="all">All photographs</option><option value="redsea">Red Sea</option><option value="gulf">Arabian Gulf</option><option value="eastasia">East Asia and western Pacific</option><option value="representative">Bleaching elsewhere</option></select></label><button id="photoPrev" aria-label="Previous photographs"></button><button id="photoPlay">Play slideshow</button><button id="photoNext" aria-label="Next photographs"></button><span id="photoPage" aria-live="polite"></span></div></div>
       <div class="habitat-gallery" id="photoGallery"></div><p class="gallery-note">Photographs illustrate habitats; the map and forecasts use the selected cell’s SST records.</p>
     </section>
     <section class="analysis-section resources-section" id="research"><div class="section-heading"><div><span class="eyebrow">THE SCIENCE AROUND THE ATLAS</span><h2>Related published research</h2><p>Regional heatwaves, coastal habitats, climate drivers and forecasting. Browse ten papers at a time.</p></div><div class="resource-controls"><label>Topic<select id="paperTopic"><option value="all">All topics</option><option value="regional">Regional studies</option><option value="habitats">Habitat impacts</option><option value="methods">Methods and drivers</option><option value="forecast">Forecasting</option></select></label><button id="papersPrev" aria-label="Previous ten papers"></button><button id="papersPlay">Play paper slideshow</button><button id="papersNext" aria-label="Next ten papers"></button><span id="papersPosition" aria-live="polite"></span></div></div><div id="paperList" class="paper-list"></div><p id="paperUpdated" class="detail-note"></p></section>

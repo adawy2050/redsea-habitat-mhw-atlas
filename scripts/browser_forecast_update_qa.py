@@ -8,6 +8,7 @@ async def main():
     async with async_playwright() as p:
         browser=await p.chromium.launch();page=await browser.new_page(viewport={'width':1440,'height':1000});errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
         await page.goto('http://127.0.0.1:8765/?lang=en&lat=38.25&lon=141.60&product=oisst');await page.wait_for_function("document.documentElement.dataset.ready==='true'",timeout=90000)
+        assert await page.locator('#photoBasin option[value="eastasia"]').count()==1
         f=await page.evaluate('AtlasUI.forecast("oisst",AtlasUI.snapshot().state.pixel)');assert f['external'] is not None and f['trainingLastYear']==2025 and f['nTest']==10
         dates=await page.evaluate('AtlasDetails.load(AtlasUI.snapshot().state.pixel,"oisst").then(d=>({daily:d.daily.dates.at(-1),monthly:d.monthly.dates.at(-1),year:d.currentYear}))');assert dates=={'daily':'2026-10-20','monthly':'2026-10-15','year':2026},dates
         await page.locator('#openPointAnalysis').click();await page.get_by_role('button',name='Climate indices',exact=True).click();await page.wait_for_function("document.querySelector('#issuedIndexPlot').data?.length>20",timeout=30000)

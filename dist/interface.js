@@ -18,7 +18,7 @@
   function pause(){clearInterval(timer);timer=null;$('photoPlay').textContent='Play slideshow';}
   $('photoPrev').onclick=()=>{page--;render();};$('photoNext').onclick=()=>{page++;render();};$('photoBasin').onchange=()=>{autoPhotoArea=false;page=0;render();};$('photoPlay').onclick=()=>{if(timer){pause();return;}timer=setInterval(()=>{if(!document.hidden&&!dialog.open){page++;render();}},6500);$('photoPlay').textContent='Pause slideshow';};document.addEventListener('visibilitychange',()=>{if(document.hidden)pause();});window.addEventListener('atlasmotionchange',()=>{if(document.documentElement.dataset.motion==='off')pause();});
   window.addEventListener('atlaspixelchange',e=>updatePixel(e.detail));window.addEventListener('atlaslanguagechange',()=>{render();updatePixel();if(dialog.open)open(active);});
-  fetch('./images/credits.json?v=20261022-forecast-r2').then(r=>{if(!r.ok)throw Error('Photo catalogue unavailable');return r.json();}).then(data=>{photos=data;render();const p=window.AtlasDebug?.pixels?.[AtlasDebug.state.pixel];if(p)lastPoint={basin:AtlasDebug.meta.basins.find(b=>b.regions.includes(p[3])).id,habitats:p[2],latitude:p[1],longitude:p[0]};updatePixel();window.dispatchEvent(new Event('atlasphotosready'));});
+  fetch('./images/credits.json?v=20261022-forecast-r3').then(r=>{if(!r.ok)throw Error('Photo catalogue unavailable');return r.json();}).then(data=>{photos=data;render();const p=window.AtlasDebug?.pixels?.[AtlasDebug.state.pixel];if(p)lastPoint={basin:AtlasDebug.meta.basins.find(b=>b.regions.includes(p[3])).id,habitats:p[2],latitude:p[1],longitude:p[0]};updatePixel();window.dispatchEvent(new Event('atlasphotosready'));});
   window.AtlasPhotos={open,picture,credit,nearest,get photos(){return photos;}};
 })();
 
@@ -114,7 +114,7 @@
 /* Red Sea Habitat Heatwave Atlas. All scientific arrays are fetched locally. */
 (() => {
   'use strict';
-  const RELEASE='20261022-forecast-r2';
+  const RELEASE='20261022-forecast-r3';
   const $ = id => document.getElementById(id), S = window.AtlasStats;
   const labels = {Nino34: 'Niño-3.4', IOD: 'IOD', NAO: 'NAO', AO: 'AO', EAWR: 'EAWR', NAtl_SSTA: 'N. Atlantic SST', PDO: 'PDO',localSst:'Annual SST (OISST)'};
   const modeColors = {Nino34:'#c43d32', IOD:'#007d8a', NAO:'#7e52a0', AO:'#366aa2', EAWR:'#99700d', NAtl_SSTA:'#b52a74', PDO:'#39813c',localSst:'#7c660d'};
@@ -1024,7 +1024,7 @@
 /* Forecasts issued by Columbia/IRI and JAMSTEC, with their source records. */
 (() => {
   const $=id=>document.getElementById(id),T=s=>AtlasLanguage.translate(s);let loaded,ticket=0;
-  AtlasLanguage.add({'Issued climate-index forecasts':'توقعات المؤشرات المناخية المنشورة','Cell outlook inputs':'مدخلات توقع الخلية','Observed indices + issued ENSO forecast':'المؤشرات المرصودة وتوقع ENSO المنشور','Observed indices only':'المؤشرات المرصودة فقط','Forecast sources':'مصادر التوقعات','Papers and news for':'الأبحاث والأخبار لمنطقة','Change the selected area on the map to see its sources.':'غيّر المنطقة المختارة على الخريطة لعرض مصادرها.','Using issued forecasts at this cell':'استخدام التوقعات المنشورة عند هذه الخلية'});
+  AtlasLanguage.add({'COASTAL HABITATS':'الموائل الساحلية','East Asia and western Pacific':'شرق آسيا وغرب المحيط الهادئ','Issued climate-index forecasts':'توقعات المؤشرات المناخية المنشورة','Cell outlook inputs':'مدخلات توقع الخلية','Observed indices + issued ENSO forecast':'المؤشرات المرصودة وتوقع ENSO المنشور','Observed indices only':'المؤشرات المرصودة فقط','Forecast sources':'مصادر التوقعات','Papers and news for':'الأبحاث والأخبار لمنطقة','Change the selected area on the map to see its sources.':'غيّر المنطقة المختارة على الخريطة لعرض مصادرها.','Using issued forecasts at this cell':'استخدام التوقعات المنشورة عند هذه الخلية'});
   const label=document.createElement('label');label.textContent='Cell outlook inputs';const select=document.createElement('select');select.id='outlookInputs';select.append(new Option('Observed indices + issued ENSO forecast','external'),new Option('Observed indices only','observed'));label.append(select);$('outlookScope').closest('.chart-options').append(label);select.onchange=()=>AtlasUI.setOutlookInputs(select.value);
   function availability(){const available=AtlasUI.hasIssuedForecast(AtlasUI.snapshot().state.product);select.options[0].disabled=!available;if(!available)select.value='observed';}
   window.addEventListener('atlasready',availability);$('product').addEventListener('change',availability);

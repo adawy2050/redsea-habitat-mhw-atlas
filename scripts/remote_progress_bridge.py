@@ -32,6 +32,11 @@ def main():
             published=False
             if 'mur' in ready:
                 message='Both analyses are checked. The website update is being prepared.'
+                if (root/'release_status.json').exists():
+                    release=json.loads((root/'release_status.json').read_text());stage=release.get('stage','')
+                    if stage=='Publication retry':message='Both analyses are checked. Website publication is retrying; the last published version remains available.'
+                    elif stage=='Publication needs review':message='Both analyses are checked. Website publication needs review.'
+                    elif stage in ['Confirming cross-year events','Preparing publication','Checking data and cell models','Deploying']:message='Both analyses are checked. '+stage+'.'
                 try:
                     with urlopen('https://adawy2050.github.io/redsea-habitat-mhw-atlas/observed2026/manifest.json?t='+str(int(time.time())),timeout=30) as response:live=json.load(response)
                     published='mur' in live.get('products',{})
