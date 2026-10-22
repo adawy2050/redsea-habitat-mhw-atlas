@@ -203,3 +203,5 @@ window.AtlasLanguage.add({'Switch colour theme':'تبديل نمط الألوا�
 window.AtlasLanguage.add({'Annual extensions follow the selected index lead. Unavailable future inputs are held at their latest means; current-year means use available months. Separate from the seasonal probability forecast.':'تتبع الامتدادات السنوية مدة تقدم المؤشرات المختارة. تُثبت المدخلات المستقبلية غير المتاحة عند أحدث متوسطاتها، وتستخدم السنة الحالية أشهرها المتاحة. وهي منفصلة عن توقع الاحتمال الموسمي.','Daily climate CSV':'بيانات المناخ اليومية CSV'});
 
 window.AtlasLanguage.add({"Preview shown; loading original.": "تظهر المعاينة؛ جارٍ تحميل الصورة الأصلية.", "Original photograph": "الصورة الأصلية", "Preview shown. The original is available from the source link.": "تظهر المعاينة. تتوفر الصورة الأصلية من رابط المصدر.", "Observed and fitted annual values": "القيم السنوية المرصودة والملائمة بالنموذج", "Annual fit through 2025 · dotted 2026 observations to 20 Oct": "الملاءمة السنوية حتى 2025 · رصد 2026 المنقط حتى 20 أكتوبر"});
+
+window.AtlasLanguage.add({'Show latest':'عرض أحدث الرصد'});

@@ -14,7 +14,7 @@ async def main():
         page.on('pageerror',lambda error:errors.append(str(error)))
         page.on('response',lambda r:missing.append(r.url) if r.status>=400 and r.url.startswith(BASE) else None)
         for basin,lat,lon in [('redsea',26.73,33.94),('gulf',25.87,55.99),('eastasia',38.25,141.60)]:
-            await page.goto(f'{BASE}?lang=en&basin={basin}&lat={lat}&lon={lon}&product=mur&v=20261023-october-r1')
+            await page.goto(f'{BASE}?lang=en&basin={basin}&lat={lat}&lon={lon}&product=mur&v=20261023-october-r2')
             await page.wait_for_function("document.documentElement.dataset.ready==='true'",timeout=90000)
             assert await page.locator('#year').input_value()=='2026'
             for product in ['mur','oisst']:
@@ -39,7 +39,7 @@ async def main():
             await page.locator('#openPointAnalysis').click()
             await page.wait_for_function("document.querySelector('#pointHistoryOutlookPlot').data?.length===4",timeout=30000)
             assert await page.locator('#pointAnalysis').evaluate('e=>e.getBoundingClientRect().width>=innerWidth*.95')
-            assert await page.locator('#pointHistoryOutlookPlot').evaluate("e=>e.data[0].x.at(-1)==='2026-10-15'&&e.data[3].x.at(-1)==='2027-02-28'")
+            assert await page.locator('#pointHistoryOutlookPlot').evaluate("e=>e.data[0].x.at(-1)==='2026-10-20'&&e.data[3].x.at(-1)==='2027-02-28'")
             await page.wait_for_function("[...document.querySelectorAll('#pixelPhoto img')].some(i=>i.complete&&i.naturalWidth>0)",timeout=30000)
             await page.get_by_role('button',name='Daily and monthly',exact=True).click()
             await page.wait_for_function("document.querySelector('#detailPlot').data?.some(t=>t.x.at(-1)==='2026-10-20')",timeout=30000)

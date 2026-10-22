@@ -1,7 +1,7 @@
 /* Red Sea Habitat Heatwave Atlas. All scientific arrays are fetched locally. */
 (() => {
   'use strict';
-  const RELEASE='20261023-october-r1';
+  const RELEASE='20261023-october-r2';
   const $ = id => document.getElementById(id), S = window.AtlasStats;
   const labels = {Nino34: 'Niño-3.4', IOD: 'IOD', NAO: 'NAO', AO: 'AO', EAWR: 'EAWR', NAtl_SSTA: 'N. Atlantic SST', PDO: 'PDO',localSst:'Annual SST (OISST)'};
   const modeColors = {Nino34:'#c43d32', IOD:'#007d8a', NAO:'#7e52a0', AO:'#366aa2', EAWR:'#99700d', NAtl_SSTA:'#b52a74', PDO:'#39813c',localSst:'#7c660d'};
@@ -195,6 +195,7 @@
     if(state.to>=2026&&window.AtlasObserved2026){const records=await Promise.all(indices.map(index=>AtlasObserved2026.forPoint(index,product)));if(ticket!==historyTicket)return;records.forEach((record,j)=>{if(record?.product!==product)return;const trace=AtlasObserved2026.runningTrace(record,metric,{name:coordinate(indices[j])+' · 2026 to date',line:{color:j===0?'#98614d':pinColors[(j-1)%pinColors.length],width:1.8,dash:'dot'}});traces.push(trace);currentEnd=record.index.dateEnd;trace.y.forEach((value,k)=>currentHistory.push({pixel:pixelId(indices[j]),latitude:pixels[indices[j]][1],longitude:pixels[indices[j]][0],product:p.name,year:2026,metric,value,series:'observed_running_to_date',date:record.index.dates[k]}));});if(second&&second!==metric){const sourceProduct=second==='localSst'?'oisst':product,record=second==='localSst'?await AtlasObserved2026.forPoint(state.pixel,'oisst'):records[0];if(ticket!==historyTicket)return;if(record?.product===sourceProduct)traces.push(AtlasObserved2026.runningTrace(record,second,{name:(second==='localSst'?'Mean SST':metricInfo[second].name)+' · 2026 to date',yaxis:'y2',line:{color:'#7a6253',width:1.4,dash:'dot'}}));}}
     if(ticket!==historyTicket)return;
     renderPlot('historyPlot',traces,layout({margin:{l:65,r:70,t:45,b:48},yaxis:{title:metricInfo[metric].axis},yaxis2:{title:second&&second!==metric?(second==='localSst'?'SST (°C)':metricInfo[second].axis):'',overlaying:'y',side:'right',showgrid:false,zeroline:false,rangemode:second==='localSst'?'normal':'tozero',visible:!!second&&second!==metric},xaxis:{dtick:Math.max(1,Math.round((state.to-state.from)/9))},shapes:[{type:'line',xref:'x',x0:state.year,x1:state.year,yref:'paper',y0:0,y1:1,line:{color:'#a6b3a0',width:1,dash:'dot'}}]}),config);
+    $('historyRangeStatus').textContent=currentEnd?'Observed through '+currentEnd:'Showing '+state.from+'–'+state.to+'; observations through 20 Oct 2026 are available.';
     $('historyCaption').textContent=`${p.name} · ${state.from}–${Math.min(state.to,2025)} annual values${currentEnd?' · dotted 2026: running values through '+currentEnd:''} · baseline ${p.baseline} · ${metricInfo[metric].unit}`;
     $('pins').replaceChildren(...state.pins.map((index,j)=>{const e=document.createElement('span');e.className='pin';const dot=document.createElement('i');dot.className='pin-dot';dot.style.background=pinColors[j%pinColors.length];const b=document.createElement('button');b.textContent='×';b.setAttribute('aria-label',`Remove ${coordinate(index)}`);b.onclick=()=>{state.pins=state.pins.filter(i=>i!==index);renderHistory();};e.append(dot,document.createTextNode(coordinate(index)),b);return e;}));
   }
@@ -345,6 +346,7 @@
     $('fitMap').onclick=fitStudy;
     $('pinPixel').onclick=()=>{if(state.pins.includes(state.pixel)){note('This cell is already in the comparison.');return;}if(state.pins.length>=5){note('Compare up to five pinned cells. Remove one to add another.');return;}state.pins.push(state.pixel);renderHistory();note('Cell added. Select another cell on the map to compare.');};
     $('clearPins').onclick=()=>{state.pins=[];renderHistory();};
+    $('showLatestRecords').onclick=()=>{state.to=2026;$('toYear').value='2026';renderHistory();renderModel();window.dispatchEvent(new Event('atlasrangechange'));};
     $('fromYear').onchange=()=>{state.from=Number($('fromYear').value);if(state.from>state.to){state.to=state.from;$('toYear').value=state.to;}renderHistory();renderModel();renderClimate();window.dispatchEvent(new Event('atlasrangechange'));};
     $('toYear').onchange=()=>{state.to=Number($('toYear').value);if(state.to<state.from){state.from=state.to;$('fromYear').value=state.from;}renderHistory();renderModel();renderClimate();window.dispatchEvent(new Event('atlasrangechange'));};
     $('benchmark').onchange=()=>{state.benchmark=$('benchmark').value;renderModel();};$('lag').onchange=()=>{state.lag=Number($('lag').value);renderModel();};
@@ -391,7 +393,7 @@
     setOutlookInputs(value){outlookInputs=value;renderMap();renderOutlook();window.dispatchEvent(new Event('atlasforecastinputschange'));},
     hasIssuedForecast:product=>!!externalInfo(product,true),
     setYear(year){if(year===state.year||![...meta.products[state.product].years,2026].includes(year)||state.mapMode==='probability')return;$('year').value=year;yearChanged();},
-    setRange(from,to){state.from=Math.max(meta.products[state.product].years[0],Math.floor(from));state.to=Math.min(2026,Math.floor(to));if(state.from>state.to)return;$('fromYear').value=state.from;$('toYear').value=state.to;renderHistory();renderModel();window.dispatchEvent(new Event('atlasrangechange'));},
+    setRange(from,to){const first=Math.max(meta.products[state.product].years[0],Math.floor(from)),last=Math.min(2026,Math.floor(to));if(!Number.isFinite(first)||!Number.isFinite(last)||first>last)return;state.from=first;state.to=last;$('fromYear').value=state.from;$('toYear').value=state.to;renderHistory();renderModel();window.dispatchEvent(new Event('atlasrangechange'));},
     redraw(){pixelLayer.draw();},
     selectBounds(bounds){state.selection=bounds?[bounds.getWest(),bounds.getSouth(),bounds.getEast(),bounds.getNorth()]:null;if(bounds){const centre=bounds.getCenter(),i=nearest(centre.lat,centre.lng,true);if(i>=0)selectPixel(i);}filterChanged();window.dispatchEvent(new Event('atlasselectionchange'));},
     async visit(step){
