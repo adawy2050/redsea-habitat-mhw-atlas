@@ -66,12 +66,20 @@ photos=json.loads((root/'images/credits.json').read_text(encoding='utf8'))
 assert len(photos)>=12 and len({p['file'] for p in photos})==len(photos)
 assert {'redsea','gulf','representative'} <= {p['basin'] for p in photos}
 for photo in photos:
-    image=root/'images'/photo['file']
-    assert image.stat().st_size>200000 and image.read_bytes().startswith(b'\xff\xd8')
+    if photo.get('originalHosted',True):
+        image=root/'images'/photo['file']
+        assert image.stat().st_size>200000 and image.read_bytes().startswith(b'\xff\xd8')
+        assert hashlib.sha256(image.read_bytes()).hexdigest()==photo['sha256']
+    else:
+        assert photo['original'].startswith('https://upload.wikimedia.org/')
+        assert len(photo['sha256'])==64 and photo['originalBytes']>100000
+        # Full originals are retained in the local source library, outside Pages.
+        image=root.parent.parent/'atlas-photo-library'/(photo['id']+'.jpg')
+        if image.exists():
+            assert hashlib.sha256(image.read_bytes()).hexdigest()==photo['sha256']
     assert max(photo['width'],photo['height'])>=3000
-    assert hashlib.sha256(image.read_bytes()).hexdigest()==photo['sha256']
-    for width in (480,960,1600,2400):
-        for ext in ('avif','webp','jpg'):
+    for width in photo.get('responsiveWidths',(480,960,1600,2400)):
+        for ext in photo.get('formats',('avif','webp','jpg')):
             assert (root/'images/responsive'/f"{photo['id']}-{width}.{ext}").is_file()
     assert photo['source'].startswith('https://commons.wikimedia.org/wiki/')
     assert photo['license'].startswith(('CC BY','CC0','Public domain'))
@@ -89,4 +97,4 @@ assert coverage_count>=5864
 print(f"PASS: {len(pixels):,} unique habitat cells; 108 summary checks; native-array dimensions, missing values, indices and asset checksums.")
 print(f'PASS: {coverage_count:,} rendered habitat coverage tiles match the map index.')
 print('PASS: native seasonal histories, current pixel probabilities, coefficients and chronological backtest arrays.')
-print(f'PASS: {len(photos)} original-resolution photographs, SHA-256 hashes, responsive derivatives and licence metadata.')
+print(f'PASS: {len(photos)} photograph source records, original SHA-256 hashes, responsive derivatives and licence metadata.')

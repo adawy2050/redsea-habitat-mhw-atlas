@@ -24,6 +24,7 @@ def main():
     parser.add_argument('--owner', default='adawy2050')
     parser.add_argument('--repo', default='redsea-habitat-mhw-atlas')
     parser.add_argument('--check-only', action='store_true')
+    parser.add_argument('--staged-only', action='store_true', help='Publish the current staged commit without adding in-progress assets')
     parser.add_argument('--git-auth', action='store_true', help='Use the existing GitHub sign-in through the normal Git credential helper; no credential is printed or saved')
     args = parser.parse_args()
     if args.git_auth:
@@ -92,7 +93,7 @@ def main():
     remote=git('remote','get-url','origin').stdout.strip()
     if remote!=repo['clone_url']:
         raise SystemExit('Existing local remote differs from target repository; publication stopped.')
-    git('add','dist','scripts','.github','.gitignore','.gitattributes','README.md','DATA_METHODS.md','preview.ps1')
+    if not args.staged_only:git('add','dist','scripts','.github','.gitignore','.gitattributes','README.md','DATA_METHODS.md','preview.ps1')
     changes=git('diff','--cached','--quiet',check=False)
     if changes.returncode:
         git('commit','-m','Build interactive habitat-pixel heatwave atlas with validated study data')

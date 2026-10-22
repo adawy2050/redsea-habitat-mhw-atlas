@@ -1,7 +1,7 @@
 /* Red Sea Habitat Heatwave Atlas. All scientific arrays are fetched locally. */
 (() => {
   'use strict';
-  const RELEASE='20261019-scientific-r3';
+  const RELEASE='20261022-mixed-r1';
   const $ = id => document.getElementById(id), S = window.AtlasStats;
   const labels = {Nino34: 'Niño-3.4', IOD: 'IOD', NAO: 'NAO', AO: 'AO', EAWR: 'EAWR', NAtl_SSTA: 'N. Atlantic SST', PDO: 'PDO',localSst:'Annual SST (OISST)'};
   const modeColors = {Nino34:'#c43d32', IOD:'#007d8a', NAO:'#7e52a0', AO:'#366aa2', EAWR:'#99700d', NAtl_SSTA:'#b52a74', PDO:'#39813c',localSst:'#7c660d'};
@@ -13,7 +13,7 @@
     mhw_max_intensity: {name:'Maximum intensity', unit:'°C', axis:'Maximum intensity (°C relative to threshold)', max:3, digits:2},
     mhw_cumulative_intensity: {name:'Cumulative intensity', unit:'°C days', axis:'Cumulative intensity (°C days)', max:160, digits:1}
   };
-  const state = {product:'mur', metric:'mhw_days',mapMode:'history', year:2025, basin:'all',region:'all', habitats:15, selection:null,historySecondary:'mhw_frequency', pixel:0, pins:[], arrays:new Map(),showTrend:true,climateTrend:false,
+  const state = {product:'mur', metric:'mhw_days',mapMode:'history', year:2025, basin:'all',region:'all', habitats:13, selection:null,historySecondary:'mhw_frequency', pixel:0, pins:[], arrays:new Map(),showTrend:true,climateTrend:false,
     from:2003, to:2025, lag:0, benchmark:'trend', index:'Nino34', detrend:true, selectedModes:new Set(['Nino34','IOD','NAtl_SSTA','AO']),
     step:'monthly', scale:'standard', climateSource:'latest',climateFrom:null,climateTo:null,outlookRecord:'GHRSST MUR',outlookScope:'ecoregion',pixelOpacity:.7,showPixels:true,timer:null,generation:0};
   let meta, pixels, climate, map, pixelLayer, selectedMarker, sourceMarker, sourceLine, climateZ, mapLand,landLayer,satelliteLayer,coverageMeta,liveClimate,outlook;
@@ -85,11 +85,13 @@
     map=L.map('map',{zoomControl:false,attributionControl:true,minZoom:3,maxZoom:16,preferCanvas:true});fitStudy();
     map.attributionControl.setPrefix('');map.attributionControl.addAttribution('<a href="https://www.unep-wcmc.org/" target="_blank">UNEP-WCMC: coral 2021, seagrass 2021, mangroves 2010</a>');
     L.control.zoom({position:'topright'}).addTo(map);
-    landLayer=L.geoJSON(land,{interactive:false,style:{color:'#8994a3',weight:.55,fillColor:'#d4dae1',fillOpacity:1}});
-    satelliteLayer=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,detectRetina:true,crossOrigin:true,attribution:'Imagery © Esri, Vantor, Earthstar Geographics, GIS User Community'}).addTo(map);
+    map.createPane('coastBase');map.getPane('coastBase').style.zIndex=230;
+    landLayer=L.geoJSON(land,{pane:'coastBase',interactive:false,style:{color:'#8994a3',weight:.55,fillColor:'#d4dae1',fillOpacity:1}});
+    satelliteLayer=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,detectRetina:true,crossOrigin:true,attribution:'Imagery © Esri, Vantor, Earthstar Geographics, GIS User Community'});
+    satelliteLayer.addTo(map);
     map.createPane('habitatCoverage');map.getPane('habitatCoverage').style.zIndex=390;map.getPane('habitatCoverage').style.pointerEvents='none';
     const empty='data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
-    for(const habitat of meta.habitats){const keys=new Set(coverageMeta.tiles[habitat]||[]);const Coverage=L.TileLayer.extend({getTileUrl(coords){const key=`${coords.z}/${coords.x}/${coords.y}`;return keys.has(key)?new URL(`./coverage/${habitat}/${key}.png?v=${RELEASE}`,document.baseURI).href:empty;}});coverageLayers[habitat]=new Coverage('',{pane:'habitatCoverage',minZoom:4,maxNativeZoom:12,maxZoom:16,opacity:.95,crossOrigin:true,errorTileUrl:empty}).addTo(map);}
+    for(const habitat of meta.habitats){const keys=new Set(coverageMeta.tiles[habitat]||[]);const Coverage=L.TileLayer.extend({getTileUrl(coords){const key=`${coords.z}/${coords.x}/${coords.y}`;return keys.has(key)?new URL(`./coverage/${habitat}/${key}.png?v=${RELEASE}`,document.baseURI).href:empty;}});coverageLayers[habitat]=new Coverage('',{pane:'habitatCoverage',minZoom:4,maxNativeZoom:12,maxZoom:16,opacity:.95,crossOrigin:true,errorTileUrl:empty});if(document.querySelector(`input[name="coverage"][value="${habitat}"]`)?.checked!==false)coverageLayers[habitat].addTo(map);}
     for(const [name,lat,lon,kind] of [['EGYPT',27.7,30.3,'country'],['SAUDI ARABIA',25.7,43.5,'country'],['SUDAN',20.8,33.5,'country'],['ERITREA',15.7,37.4,'country'],['YEMEN',15.8,47,'country'],['SOMALIA',9.6,47.5,'country'],['Red Sea',22.7,38.9,'sea'],['Gulf of Aden',12.5,47.8,'sea']]) {
       L.tooltip({permanent:true,direction:'center',className:`country-label ${kind==='sea'?'sea-label':''}`,interactive:false}).setLatLng([lat,lon]).setContent(name).addTo(map);
     }
@@ -118,7 +120,7 @@
     map.on('click',e=>{
       let best=-1,distance=14*14;
       for(let i=0;i<pixels.length;i++){const p=pixels[i];if(!visible(p))continue;const q=map.latLngToContainerPoint([p[1],p[0]]),d=(q.x-e.containerPoint.x)**2+(q.y-e.containerPoint.y)**2;if(d<distance){distance=d;best=i;}}
-      if(best>=0)selectPixel(best);else note('Zoom towards the coloured coastline, then select a habitat cell.');
+      if(best>=0){selectPixel(best);window.dispatchEvent(new Event('atlaspointopen'));}else note('Zoom towards the coloured coastline, then select a habitat cell.');
     });
   }
 
@@ -293,25 +295,26 @@
       const context=outlook.targets.filter(t=>t.available&&t.product===productInfo.name&&t.basin===pointBasin(point).id&&habitats.includes(t.habitat)&&(t.scope==='overall'||t.region===meta.regions[point[3]]));
       await window.AtlasReports.create({pixel:pixelId(pixel),latitude:point[1],longitude:point[0],habitats,region:meta.regions[point[3]],product:productInfo,
         source:productInfo.cells[sourceIndex(pixel,product)],distance:point[product==='mur'?6:7],metric,metricInfo:metricInfo[metric],histories,forecast,validation,seasonal,context,
-        association,scenarios:window.AtlasScenarios?.compute(),detail:await window.AtlasDetails?.load(pixel,product),dailyClimate:await window.AtlasDetails?.climate(),updated:outlook.asOf,liveClimate,webUrl:`https://adawy2050.github.io/redsea-habitat-mhw-atlas/?lat=${point[1]}&lon=${point[0]}&product=${product}`});
+        association,scenarios:window.AtlasScenarios?.compute(),detail:await window.AtlasDetails?.load(pixel,product),observed2026:await window.AtlasObserved2026?.forPoint(pixel,product),dailyClimate:await window.AtlasDetails?.climate(),updated:outlook.asOf,liveClimate,webUrl:`https://adawy2050.github.io/redsea-habitat-mhw-atlas/?lat=${point[1]}&lon=${point[0]}&product=${product}`});
       note('Point report downloaded.');
     }catch(error){console.error(error);note(`Report could not be created: ${error.message}`);}
     finally{button.disabled=false;button.textContent='Create point report (PDF) ';}
   }
   function exportMap(){
     const canvas=document.createElement('canvas'),w=$('map').clientWidth,h=$('map').clientHeight;
-    canvas.width=w*2;canvas.height=h*2;const ctx=canvas.getContext('2d');ctx.scale(2,2);ctx.fillStyle='#102f37';ctx.fillRect(0,0,w,h);
+    canvas.width=w*2;canvas.height=h*2;const ctx=canvas.getContext('2d');ctx.scale(2,2);ctx.fillStyle=$('basemap').value==='satellite'?'#102f37':'#eaf0f4';ctx.fillRect(0,0,w,h);
     ctx.fillStyle='#24464a';ctx.strokeStyle='#51726d';ctx.lineWidth=.6;
     if($('basemap').value==='coastline')for(const feature of mapLand.features){const geometry=feature.geometry,polygons=geometry.type==='Polygon'?[geometry.coordinates]:geometry.coordinates;
       for(const polygon of polygons){ctx.beginPath();for(const ring of polygon){ring.forEach((xy,i)=>{const p=map.latLngToContainerPoint([xy[1],xy[0]]);if(i===0)ctx.moveTo(p.x,p.y);else ctx.lineTo(p.x,p.y);});ctx.closePath();}ctx.fill('evenodd');ctx.stroke();}
     }
-    const baseRect=$('map').getBoundingClientRect();for(const tile of $('map').querySelectorAll('img.leaflet-tile-loaded')){if(tile.complete&&tile.naturalWidth){const r=tile.getBoundingClientRect();ctx.drawImage(tile,r.x-baseRect.x,r.y-baseRect.y,r.width,r.height);}}
+    const baseRect=$('map').getBoundingClientRect();ctx.globalAlpha=window.AtlasMapLayers?.state.satellite??1;for(const tile of $('map').querySelectorAll('img.leaflet-tile-loaded')){if(tile.complete&&tile.naturalWidth){const r=tile.getBoundingClientRect();ctx.drawImage(tile,r.x-baseRect.x,r.y-baseRect.y,r.width,r.height);}}
+    ctx.globalAlpha=1;for(const name of ['shorelineOverview','shorelineDetailBackground','shorelineDetail']){const pane=map.getPane(name);if(!pane||getComputedStyle(pane).display==='none')continue;for(const c of pane.querySelectorAll('canvas')){const r=c.getBoundingClientRect();ctx.globalAlpha=Number(getComputedStyle(pane).opacity);ctx.drawImage(c,r.x-baseRect.x,r.y-baseRect.y,r.width,r.height);}}ctx.globalAlpha=1;
     ctx.drawImage(pixelLayer.canvas,0,0,w,h);
     const selected=map.latLngToContainerPoint([pixels[state.pixel][1],pixels[state.pixel][0]]);ctx.beginPath();ctx.arc(selected.x,selected.y,7,0,Math.PI*2);ctx.strokeStyle='#fff0b6';ctx.lineWidth=2;ctx.stroke();
     const forecast=outlook.pixelOutlooks[state.product],mapTitle=state.mapMode==='probability'?`Prediction probability · ${forecast.season} ${forecast.seasonStart.slice(0,4)}`:`${metricInfo[state.metric].name} · ${state.year}`;
-    ctx.fillStyle='#102f37dd';ctx.fillRect(0,0,w,65);ctx.fillRect(0,h-70,w,70);ctx.fillStyle='#eeeade';ctx.font='15px system-ui';ctx.fillText(`${mapTitle} · ${meta.products[state.product].name}`,20,28);ctx.font='10px system-ui';ctx.fillText('RED SEA & ARABIAN GULF HABITAT HEATWAVE ATLAS · habitat cells only',20,47);
+    ctx.fillStyle='#102f37dd';ctx.fillRect(0,0,w,65);ctx.fillRect(0,h-70,w,70);ctx.fillStyle='#eeeade';ctx.font='15px system-ui';ctx.fillText(`${mapTitle} · ${meta.products[state.product].name}`,20,28);ctx.font='10px system-ui';ctx.fillText('COASTAL HABITAT HEATWAVE ATLAS · habitat cells only',20,47);
     const info=mapInfo();for(let i=0;i<140;i++){ctx.fillStyle=color(i/139*info.max,info.max);ctx.fillRect(20+i,h-42,1,6);}ctx.fillStyle='#ceded4';ctx.font='9px system-ui';ctx.fillText(`${info.axis}     0 — ${info.max}+`,20,h-50);ctx.fillText(state.mapMode==='probability'?`${forecast.leadMonths}-month lead · updated ${outlook.asOf} · ${meta.products[state.product].resolution} SST`:`Baseline ${meta.products[state.product].baseline} · ${meta.products[state.product].resolution} SST`,20,h-18);
-    ctx.textAlign='right';ctx.fillText($('basemap').value==='satellite'?'Imagery © Esri, Vantor, Earthstar Geographics, GIS User Community · UNEP-WCMC habitats':'Natural Earth · UNEP-WCMC habitats · NASA/JPL · NOAA',w-20,h-18);
+    ctx.textAlign='right';ctx.fillText($('basemap').value!=='coastline'?'Imagery © Esri, Vantor, Earthstar Geographics, GIS User Community · GSHHG shoreline · UNEP-WCMC habitats':'GSHHG shoreline · UNEP-WCMC habitats · NASA/JPL · NOAA',w-20,h-18);
     canvas.toBlob(blob=>{if(!blob){note('Map image could not be generated.');return;}const a=document.createElement('a'),url=URL.createObjectURL(blob);a.href=url;a.download=`habitat_map_${state.product}_${state.year}.png`;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);},'image/png');
   }
   function yearChanged(){state.year=Number($('year').value);pixelLayer.draw();window.dispatchEvent(new Event('atlasmapyearchange'));updateMapText();Plotly.relayout('historyPlot',{'shapes[0].x0':state.year,'shapes[0].x1':state.year}).catch(()=>{});}
@@ -319,7 +322,7 @@
     window.addEventListener('atlaslanguagechange',()=>{renderHistory();renderModel();renderClimate();});
     $('product').onchange=()=>{stop();state.product=$('product').value;forecastAvailability();setYearControls();renderMap();renderClimate();};
     $('metric').onchange=()=>{stop();if($('metric').value==='outlook_probability')state.mapMode='probability';else{state.mapMode='history';state.metric=$('metric').value;}renderMap();};
-    $('basemap').onchange=()=>{if($('basemap').value==='satellite'){map.removeLayer(landLayer);satelliteLayer.addTo(map);}else{map.removeLayer(satelliteLayer);landLayer.addTo(map);}};
+    $('basemap').onchange=()=>{if($('basemap').value!=='coastline'){map.removeLayer(landLayer);satelliteLayer.addTo(map);}else{map.removeLayer(satelliteLayer);landLayer.addTo(map);}};
     document.querySelectorAll('input[name="coverage"]').forEach(el=>el.onchange=()=>{el.checked?coverageLayers[el.value].addTo(map):map.removeLayer(coverageLayers[el.value]);});
     $('pixelOpacity').oninput=()=>{state.pixelOpacity=Number($('pixelOpacity').value);pixelLayer.draw();};$('showPixels').onchange=()=>{state.showPixels=$('showPixels').checked;pixelLayer.draw();};
     $('basin').onchange=()=>{state.selection=null;state.basin=$('basin').value;state.region='all';regionControls();filterChanged();fitStudy();const u=new URL(location.href);u.searchParams.set('basin',state.basin);history.replaceState(null,'',u);};
@@ -366,7 +369,7 @@
       climateZ=Object.fromEntries(climate.modes.map(m=>[m,S.standardize(climate.annual.values[m].filter((_,i)=>climate.annual.years[i]>=1982))]));
       const params=new URLSearchParams(location.search);if(['mur','oisst'].includes(params.get('product')))state.product=params.get('product');$('product').value=state.product;if(params.get('variable')==='outlook_probability'){state.mapMode='probability';$('metric').value='outlook_probability';}else if(meta.metrics.includes(params.get('variable'))){state.metric=params.get('variable');$('metric').value=state.metric;}
       if(meta.basins.some(b=>b.id===params.get('basin')))state.basin=params.get('basin');$('basin').value=state.basin;regionControls();
-      state.pixel=params.has('lat')&&params.has('lon')?nearest(Number(params.get('lat')),Number(params.get('lon'))):nearest(21.4,39.05);
+      state.pixel=params.has('lat')&&params.has('lon')?nearest(Number(params.get('lat')),Number(params.get('lon')),true):nearest(21.4,39.05,true);
       if(!visible(pixels[state.pixel]))state.pixel=pixels.findIndex(visible);
       forecastAvailability();makeMap(land);setYearControls();bind();$('climateSource').value='latest';$('climateStep').value='monthly';climateDateControls();renderLatestIndices();await renderMap();renderClimate();renderOutlook();document.documentElement.dataset.ready='true';window.dispatchEvent(new Event('atlasready'));
     }catch(e){console.error(e);$('loadingText').textContent=`Atlas could not open: ${e.message}. Please reload.`;document.documentElement.dataset.error=e.message;}
@@ -374,7 +377,7 @@
   window.AtlasUI={
     snapshot(){return {state:{...state},meta,pixels,climate,liveClimate,outlook,model:modelData,point:pixels[state.pixel],sourceIndex:sourceIndex(state.pixel),oisstIndex:sourceIndex(state.pixel,'oisst')};},
     array:(p,m)=>m.startsWith('outlook_')?forecastArray(p,m.slice(8)):array(p,m),series,nearest,selectPixel,visible,mapInfo,pixelId,color,forecast:pointForecast,
-    get map(){return map;},
+    get map(){return map;},get fallbackLand(){return landLayer;},get satellite(){return satelliteLayer;},
     setYear(year){if(year===state.year||!meta.products[state.product].years.includes(year)||state.mapMode==='probability')return;$('year').value=year;yearChanged();},
     setRange(from,to){state.from=Math.max(meta.products[state.product].years[0],Math.ceil(from));state.to=Math.min(2025,Math.floor(to));if(state.from>state.to)return;$('fromYear').value=state.from;$('toYear').value=state.to;renderHistory();renderModel();window.dispatchEvent(new Event('atlasrangechange'));},
     redraw(){pixelLayer.draw();},
@@ -387,6 +390,6 @@
       const a=await array('mur','mhw_days'),v=series(i,a),years=meta.products.mur.years,trend=S.trend(years,v);return {en:`This ${meta.regions[point[3]]} cell recorded ${number(v[0],0)} heatwave days in ${years[0]} and ${number(v.at(-1),0)} in ${years.at(-1)}. Its full-record linear change is ${signed(trend,1)} days per decade.`,ar:`سجلت هذه الخلية ${number(v[0],0)} يومًا من الموجات الحارة في ${years[0]} و${number(v.at(-1),0)} يومًا في ${years.at(-1)}. التغير الخطي خلال السجل ${signed(trend,1)} يوم لكل عقد.`};
     }
   };
-  window.AtlasDebug={state,get meta(){return meta;},get pixels(){return pixels;},get model(){return modelData;},get outlook(){return outlook;},get map(){return map;}};
+  window.AtlasDebug={state,get meta(){return meta;},get pixels(){return pixels;},get model(){return modelData;},get outlook(){return outlook;},get map(){return map;},get fallbackLand(){return landLayer;},get satellite(){return satelliteLayer;}};
   init();
 })();

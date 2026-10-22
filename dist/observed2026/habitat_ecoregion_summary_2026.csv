@@ -1,0 +1,73 @@
+product,basin,ecoregion,habitat,habitat_cells,native_sst_cells,date_start,date_end,mean_mhw_days_to_date,matched_months_end,matched_2026_mean_mhw_days,historical_matched_mean_mhw_days,historical_matched_percentile,reference_first_year,reference_last_year
+oisst,redsea,All retained regions,coral,22055,300,2026-01-01,2026-10-20,50.6063,9,45.8944,29.7541,79.55,1982,2025
+oisst,redsea,All retained regions,seagrass,32177,150,2026-01-01,2026-10-20,56.5043,9,50.4337,30.3905,79.55,1982,2025
+oisst,redsea,All retained regions,mangrove,2365,125,2026-01-01,2026-10-20,57.2436,9,49.8114,29.8717,79.55,1982,2025
+oisst,redsea,Northern and Central Red Sea,coral,12756,142,2026-01-01,2026-10-20,47.641,9,47.2283,31.4855,79.55,1982,2025
+oisst,redsea,Northern and Central Red Sea,seagrass,16572,86,2026-01-01,2026-10-20,43.882,9,42.8756,32.231,72.73,1982,2025
+oisst,redsea,Northern and Central Red Sea,mangrove,868,50,2026-01-01,2026-10-20,43.2419,9,42.8594,33.0299,72.73,1982,2025
+oisst,redsea,Southern Red Sea,coral,7967,140,2026-01-01,2026-10-20,53.7251,9,41.5896,27.9326,81.82,1982,2025
+oisst,redsea,Southern Red Sea,seagrass,12998,57,2026-01-01,2026-10-20,72.0115,9,58.8211,28.4585,86.36,1982,2025
+oisst,redsea,Southern Red Sea,mangrove,1285,62,2026-01-01,2026-10-20,67.8031,9,54.6747,28.5698,86.36,1982,2025
+oisst,redsea,Gulf of Aden,coral,1332,22,2026-01-01,2026-10-20,60.3491,9,58.8679,24.0671,90.91,1982,2025
+oisst,redsea,Gulf of Aden,seagrass,2607,12,2026-01-01,2026-10-20,59.425,9,56.6601,28.3231,81.82,1982,2025
+oisst,redsea,Gulf of Aden,mangrove,212,14,2026-01-01,2026-10-20,50.566,9,48.7972,24.8316,86.36,1982,2025
+oisst,gulf,All retained regions,coral,4615,116,2026-01-01,2026-10-20,88.5597,9,69.2713,29.6679,84.09,1982,2025
+oisst,gulf,All retained regions,seagrass,11746,90,2026-01-01,2026-10-20,90.4454,9,72.185,31.6516,81.82,1982,2025
+oisst,gulf,All retained regions,mangrove,1444,44,2026-01-01,2026-10-20,73.3296,9,60.3511,26.8872,86.36,1982,2025
+oisst,gulf,Arabian (Persian) Gulf,coral,4434,108,2026-01-01,2026-10-20,89.23,9,69.7535,29.9091,84.09,1982,2025
+oisst,gulf,Arabian (Persian) Gulf,seagrass,11746,90,2026-01-01,2026-10-20,90.4454,9,72.185,31.6516,81.82,1982,2025
+oisst,gulf,Arabian (Persian) Gulf,mangrove,919,31,2026-01-01,2026-10-20,74.8379,9,58.8226,27.2313,84.09,1982,2025
+oisst,gulf,Gulf of Oman,coral,181,8,2026-01-01,2026-10-20,72.1381,9,57.4586,23.7583,88.64,1982,2025
+oisst,gulf,Gulf of Oman,mangrove,525,13,2026-01-01,2026-10-20,70.6895,9,63.0267,26.2849,93.18,1982,2025
+oisst,eastasia,All retained regions,coral,72227,1275,2026-01-01,2026-10-20,84.9909,9,73.9895,36.3353,84.09,1982,2025
+oisst,eastasia,All retained regions,seagrass,51026,389,2026-01-01,2026-10-20,122.0505,9,107.7371,34.2224,95.45,1982,2025
+oisst,eastasia,All retained regions,mangrove,26594,591,2026-01-01,2026-10-20,93.331,9,81.9962,32.7564,95.45,1982,2025
+oisst,eastasia,All retained regions,kelp_macroalgae,5879,348,2026-01-01,2026-10-20,123.2245,9,109.6829,33.1265,95.45,1982,2025
+oisst,eastasia,Banda Sea,coral,6,2,2026-01-01,2026-10-20,29.0,9,29.0,41.7803,54.55,1982,2025
+oisst,eastasia,Banda Sea,mangrove,4,2,2026-01-01,2026-10-20,29.0,9,29.0,41.5795,54.55,1982,2025
+oisst,eastasia,Central Kuroshio Current,coral,218,13,2026-01-01,2026-10-20,97.5459,9,85.1514,34.5122,88.64,1982,2025
+oisst,eastasia,Central Kuroshio Current,seagrass,18102,106,2026-01-01,2026-10-20,80.0348,9,64.6045,26.6697,88.64,1982,2025
+oisst,eastasia,Central Kuroshio Current,kelp_macroalgae,2324,111,2026-01-01,2026-10-20,80.0392,9,64.4329,26.8009,88.64,1982,2025
+oisst,eastasia,East Caroline Islands,coral,6715,132,2026-01-01,2026-10-20,136.3847,9,136.3847,46.2314,86.36,1982,2025
+oisst,eastasia,East Caroline Islands,mangrove,279,5,2026-01-01,2026-10-20,173.8208,9,173.8208,45.4506,95.45,1982,2025
+oisst,eastasia,East China Sea,coral,466,27,2026-01-01,2026-10-20,85.8197,9,67.0558,34.0748,84.09,1982,2025
+oisst,eastasia,East China Sea,seagrass,1412,15,2026-01-01,2026-10-20,117.4313,9,110.4178,30.0486,97.73,1982,2025
+oisst,eastasia,East China Sea,mangrove,183,11,2026-01-01,2026-10-20,123.3497,9,103.5301,32.8151,97.73,1982,2025
+oisst,eastasia,East China Sea,kelp_macroalgae,869,30,2026-01-01,2026-10-20,150.2555,9,140.5075,31.8559,100.0,1982,2025
+oisst,eastasia,Eastern Philippines,coral,20984,336,2026-01-01,2026-10-20,62.0614,9,48.3696,35.7438,68.18,1982,2025
+oisst,eastasia,Eastern Philippines,mangrove,8615,254,2026-01-01,2026-10-20,67.0295,9,54.6879,35.9758,75.0,1982,2025
+oisst,eastasia,Gulf of Tonkin,coral,226,5,2026-01-01,2026-10-20,80.9557,9,65.0796,37.5004,77.27,1982,2025
+oisst,eastasia,Gulf of Tonkin,mangrove,440,9,2026-01-01,2026-10-20,152.4091,9,132.8523,37.5415,100.0,1982,2025
+oisst,eastasia,Halmahera,coral,1987,49,2026-01-01,2026-10-20,48.7876,9,48.7876,37.2378,70.45,1982,2025
+oisst,eastasia,Halmahera,mangrove,632,25,2026-01-01,2026-10-20,56.1804,9,56.1804,35.5638,75.0,1982,2025
+oisst,eastasia,Mariana Islands,coral,698,20,2026-01-01,2026-10-20,95.0344,9,93.6218,43.0632,88.64,1982,2025
+oisst,eastasia,Mariana Islands,mangrove,13,1,2026-01-01,2026-10-20,86.0,9,85.0,42.1591,81.82,1982,2025
+oisst,eastasia,Northeast Sulawesi,coral,902,18,2026-01-01,2026-10-20,32.4656,9,32.4656,32.3751,65.91,1982,2025
+oisst,eastasia,Northeast Sulawesi,mangrove,617,15,2026-01-01,2026-10-20,31.6483,9,31.6483,32.5803,65.91,1982,2025
+oisst,eastasia,Northeastern Honshu,seagrass,6005,47,2026-01-01,2026-10-20,65.2002,9,57.3677,36.3796,81.82,1982,2025
+oisst,eastasia,Northeastern Honshu,kelp_macroalgae,747,38,2026-01-01,2026-10-20,56.3628,9,48.5007,36.1041,79.55,1982,2025
+oisst,eastasia,Ogasawara Islands,coral,6,1,2026-01-01,2026-10-20,43.0,9,43.0,34.1591,67.05,1982,2025
+oisst,eastasia,Oyashio Current,seagrass,8007,64,2026-01-01,2026-10-20,98.8722,9,81.2911,31.7885,95.45,1982,2025
+oisst,eastasia,Oyashio Current,kelp_macroalgae,391,37,2026-01-01,2026-10-20,91.6164,9,74.6982,34.2542,88.64,1982,2025
+oisst,eastasia,Palawan/North Borneo,coral,23309,311,2026-01-01,2026-10-20,95.5844,9,82.2207,32.7884,90.91,1982,2025
+oisst,eastasia,Palawan/North Borneo,mangrove,12536,158,2026-01-01,2026-10-20,118.8666,9,105.7419,30.2479,95.45,1982,2025
+oisst,eastasia,Papua,coral,633,8,2026-01-01,2026-10-20,42.3934,9,41.0553,34.312,65.91,1982,2025
+oisst,eastasia,Sea of Japan/East Sea,seagrass,14448,135,2026-01-01,2026-10-20,204.6862,9,190.4518,43.7866,97.73,1982,2025
+oisst,eastasia,Sea of Japan/East Sea,mangrove,1,1,2026-01-01,2026-10-20,180.0,9,164.0,42.0455,95.45,1982,2025
+oisst,eastasia,Sea of Japan/East Sea,kelp_macroalgae,1407,119,2026-01-01,2026-10-20,215.4634,9,201.135,41.8721,97.73,1982,2025
+oisst,eastasia,Sea of Okhotsk,seagrass,2150,18,2026-01-01,2026-10-20,191.6805,9,176.7088,40.0493,95.45,1982,2025
+oisst,eastasia,Sea of Okhotsk,kelp_macroalgae,135,16,2026-01-01,2026-10-20,195.0815,9,179.4519,39.2897,95.45,1982,2025
+oisst,eastasia,South China Sea Oceanic Islands,coral,6021,148,2026-01-01,2026-10-20,90.1297,9,70.7766,35.8293,84.09,1982,2025
+oisst,eastasia,South Kuroshio,coral,3452,84,2026-01-01,2026-10-20,68.9218,9,54.04,33.7924,75.0,1982,2025
+oisst,eastasia,South Kuroshio,seagrass,902,19,2026-01-01,2026-10-20,67.1042,9,49.9446,32.4884,77.27,1982,2025
+oisst,eastasia,South Kuroshio,mangrove,217,18,2026-01-01,2026-10-20,77.1751,9,57.4977,34.3187,77.27,1982,2025
+oisst,eastasia,South Kuroshio,kelp_macroalgae,6,5,2026-01-01,2026-10-20,72.6667,9,53.8333,33.5379,77.27,1982,2025
+oisst,eastasia,Southern China,coral,596,13,2026-01-01,2026-10-20,96.245,9,78.9178,37.1227,86.36,1982,2025
+oisst,eastasia,Southern China,mangrove,383,27,2026-01-01,2026-10-20,116.1723,9,96.3081,34.5991,97.73,1982,2025
+oisst,eastasia,Sulawesi Sea/Makassar Strait,coral,3699,86,2026-01-01,2026-10-20,77.521,9,77.4709,38.7654,81.82,1982,2025
+oisst,eastasia,Sulawesi Sea/Makassar Strait,mangrove,973,43,2026-01-01,2026-10-20,62.0699,9,62.0442,35.2483,81.82,1982,2025
+oisst,eastasia,Sunda Shelf/Java Sea,coral,47,2,2026-01-01,2026-10-20,66.8723,9,59.8723,21.0401,93.18,1982,2025
+oisst,eastasia,Sunda Shelf/Java Sea,mangrove,1302,17,2026-01-01,2026-10-20,39.3886,9,34.4593,21.9479,77.27,1982,2025
+oisst,eastasia,Unassigned ecoregion,coral,15,1,2026-01-01,2026-10-20,83.0,9,70.0,43.75,75.0,1982,2025
+oisst,eastasia,West Caroline Islands,coral,2247,31,2026-01-01,2026-10-20,117.5243,9,117.5243,50.1928,81.82,1982,2025
+oisst,eastasia,West Caroline Islands,mangrove,399,13,2026-01-01,2026-10-20,117.7419,9,117.7419,49.8603,84.09,1982,2025
