@@ -1,11 +1,11 @@
 {
-  "updatedUtc": "2026-10-22T11:14:57.863353+00:00",
+  "updatedUtc": "2026-10-22T11:19:59.142574+00:00",
   "message": "OISST observations are ready for all three regions. The MUR update is continuing.",
   "jobs": [
     {
       "name": "GHRSST MUR \u00b7 three study areas",
       "stage": "downloading",
-      "completed": 1624,
+      "completed": 1648,
       "total": 2049,
       "latestDate": "2026-10-20"
     },
@@ -18,8 +18,8 @@
     }
   ],
   "photos": {
-    "completed": 413,
+    "completed": 470,
     "target": 470,
-    "stage": "Reviewing and adding openly licensed photographs."
+    "stage": "Complete"
   }
 }
